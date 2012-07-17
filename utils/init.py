@@ -11,7 +11,7 @@ import shutil
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "pinscher.schema")
 DATABASE_PATH = os.path.join(os.getcwd(),"pinscher.db")
 
-def init(dbpath, scpath):
+def initDB(dbpath, scpath):
     with open(scpath, "r") as f:
         schema = f.read()
         connection = sqlite3.connect(dbpath)
@@ -26,6 +26,7 @@ def parseArgs(args):
     parser.add_argument("--database", "-db", action = "store", default = DATABASE_PATH, dest = "dbpath", help = "The location of the database to initialise. Defaults to current working directory")
     return parser.parse_args(args)
 
+
 def main(args):
     args = parseArgs(args)
     if os.path.isfile(args.dbpath):
@@ -33,7 +34,7 @@ def main(args):
             shutil.move(args.dbpath, "%s.bak" % args.dbpath)
         else:
             os.remove(args.dbpath)
-    init(args.dbpath, args.scpath)
+    initDB(args.dbpath, args.scpath)
 
 
 if __name__ == "__main__":

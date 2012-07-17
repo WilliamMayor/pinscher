@@ -1,5 +1,8 @@
-PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
-CREATE TABLE Domain(name TEXT);
-CREATE TABLE Credentials(username TEXT, password TEXT);
+CREATE TABLE Credentials(
+    domain TEXT,
+    username TEXT, 
+    password TEXT
+);
+CREATE INDEX credentials_domain_index ON Credentials(domain);
 COMMIT;
