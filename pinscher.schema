@@ -2,7 +2,8 @@ BEGIN TRANSACTION;
 CREATE TABLE Credentials(
     domain TEXT,
     username TEXT, 
-    password TEXT
+    password TEXT,
+    PRIMARY KEY (domain, username)
 );
 CREATE INDEX credentials_domain_index ON Credentials(domain);
 COMMIT;

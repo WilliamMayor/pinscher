@@ -5,6 +5,7 @@ import sys
 import string
 import hashlib
 import sqlite3
+import random
 
 LIBS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "libs")
 sys.path.append(LIBS_PATH)
@@ -20,8 +21,8 @@ class Database():
         self.dbcon = sqlite3.connect(self.path)
         return self.dbcon.cursor()
 
-    def __exit__(self, type, value, tb):
-        if tb is None:
+    def __exit__(self, type, value, traceback):
+        if traceback is None:
             self.dbcon.commit()
             self.dbcon.close()
             self.dbcon = None
@@ -51,9 +52,20 @@ def _decrypt(key, iv, ciphertext):
     return moo.decrypt(ciphertext, 0, moo.modeOfOperation["OFB"], key, moo.aes.keySize["SIZE_256"], iv)
 
 def generate(size):
-    return ''.join(random.choice(string.printable) for x in range(size))
+    return ''.join(random.choice(string.digits + string.letters + string.punctuation) for x in range(size))
 
-def add(database, pin, domain, username, password):
+def delete(database, pin, domain, username):
+    with Database(database) as cursor:
+        query = "DELETE FROM Credentials WHERE domain = ? AND username = ?"
+        cursor.execute(query, [domain, username])
+
+def update(database, pin, domain, username, password):
+    with Database(database) as cursor:
+        query = "UPDATE Credentials SET password = ? WHERE domain = ? AND username = ?"
+        key, iv = _key(pin, domain, username)
+        cursor.execute(query, [_encrypt(key, iv, password), domain, username])
+
+def insert(database, pin, domain, username, password):
     with Database(database) as cursor:
         query = "INSERT INTO Credentials(domain, username, password) VALUES(?,?,?)"
         key, iv = _key(pin, domain, username)

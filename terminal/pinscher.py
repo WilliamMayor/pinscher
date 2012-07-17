@@ -8,6 +8,15 @@ UTILS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__fil
 sys.path.append(UTILS_PATH)
 import core
 
+def add(database, pin, domain, username, password):
+    allresults = core.password(database, pin, domain, username)
+    if isinstance(allresults, tuple):
+        print "Updating password"
+        core.update(database, pin, domain, username, password)
+    else:
+        print "Adding password"
+        core.insert(database, pin, domain, username, password)
+
 def password(database, pin, domain, username):
     print "Finding password"
     allresults = core.password(database, pin, domain, username)
@@ -57,22 +66,25 @@ def domains(database):
             print "    %s" % domain
 
 def parseArgs(args):
-    parser = argparse.ArgumentParser(description = 'pinscher - Password manager from the terminal')
-    parser.add_argument("--domain", action = "store", default = None, help = "The domain these credentials are for")
-    parser.add_argument("--username", action = "store", default = None, help = "The username")
-    parser.add_argument("--password", action = "store", default = None, help = "The password")
-    parser.add_argument("--new", action = "store_true", default = False, help = "Generate a new password")
-    parser.add_argument("--pin", action = "store", default = None, help = "The PIN used to lock/unlock the password")
-    parser.add_argument("--database", action = "store", help = "The pinscher database to look in")
+    parser = argparse.ArgumentParser(description = "pinscher - Password manager from the terminal")
+    parser.add_argument("database", action = "store", help = "The pinscher database to look in")
+    
+    parser.add_argument("--domain", action = "store", help = "The domain to assign the credentials to")
+    parser.add_argument("--username", action = "store", help = "The username")
+    parser.add_argument("--pin", action = "store", help = "The PIN used to lock the password")
+    pass_or_new = parser.add_mutually_exclusive_group(required=True)
+    pass_or_new.add_argument("--password", action = "store", default = None, help = "The password")
+    pass_or_new.add_argument("--new", action = "store_true", default = False, help = "Generate a random password")
+
     return parser.parse_args(args)
 
 def main(args):
     args = parseArgs(args)
     if bool(args.pin) and (args.new != bool(args.password)) and bool(args.username) and bool(args.domain):
         if args.new:
-            args.password = generate(10)
+            args.password = core.generate(10)
         add(args.database, args.pin, args.domain, args.username, args.password)
-    elif bool(args.pin) and not args.new and not bool(args.password) and bool(args.username) and bool(args.domain):
+    elif bool(args.pin) and bool(args.username) and bool(args.domain):
         password(args.database, args.pin, args.domain, args.username)
     elif not bool(args.pin) and not args.new and not bool(args.password) and not bool(args.username) and bool(args.domain):
         users(args.database, args.domain)
