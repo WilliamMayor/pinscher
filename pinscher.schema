@@ -1,0 +1,5 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE Domain(name TEXT);
+CREATE TABLE Credentials(username TEXT, password TEXT);
+COMMIT;
