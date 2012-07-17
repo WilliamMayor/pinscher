@@ -52,9 +52,9 @@ def users(database, domain):
             else:
                 domains[result[0]] = [result[1]]
         for key in domains:
-            print key
+            print "    %s" % key
             for username in domains[key]:
-                print "    %s" % username
+                print "        %s" % username
 
 def domains(database):
     print "Listing all domains"
