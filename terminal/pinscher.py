@@ -72,7 +72,7 @@ def parseArgs(args):
     parser.add_argument("--domain", action = "store", help = "The domain to assign the credentials to")
     parser.add_argument("--username", action = "store", help = "The username")
     parser.add_argument("--pin", action = "store", help = "The PIN used to lock the password")
-    pass_or_new = parser.add_mutually_exclusive_group(required=True)
+    pass_or_new = parser.add_mutually_exclusive_group(required=False)
     pass_or_new.add_argument("--password", action = "store", default = None, help = "The password")
     pass_or_new.add_argument("--new", action = "store_true", default = False, help = "Generate a random password")
 
@@ -80,18 +80,21 @@ def parseArgs(args):
 
 def main(args):
     args = parseArgs(args)
-    if bool(args.pin) and (args.new != bool(args.password)) and bool(args.username) and bool(args.domain):
-        if args.new:
-            args.password = core.generate(10)
-        add(args.database, args.pin, args.domain, args.username, args.password)
-    elif bool(args.pin) and bool(args.username) and bool(args.domain):
-        password(args.database, args.pin, args.domain, args.username)
-    elif not bool(args.pin) and not args.new and not bool(args.password) and not bool(args.username) and bool(args.domain):
-        users(args.database, args.domain)
-    elif not bool(args.pin) and not args.new and not bool(args.password) and not bool(args.username) and not bool(args.domain):
-        domains(args.database)
+    if args.domain:
+        if args.username:
+            if args.pin:
+                if args.new or args.password:
+                    if args.new:
+                        args.password = core.generate(10)
+                    add(args.database, args.pin, args.domain, args.username, args.password)
+                else:
+                    password(args.database, args.pin, args.domain, args.username)
+            else:
+                print "Need PIN to unlock database"
+        else:
+            users(args.database, args.domain)
     else:
-        print "You have provided an incorrect combination of arguments"
+        domain(args.database)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
