@@ -9,19 +9,21 @@ import core
 
 def add(database, pin, domain, username, password):
     allresults = core.password(database, pin, domain, username)
+    p = subprocess.Popen(["pbcopy"], stdin = subprocess.PIPE)
+    p.stdin.write(password)
     if isinstance(allresults, tuple):
         core.update(database, pin, domain, username, password)
-        print "Updated password"
+        print "Updated password, copied to clipboard"
     else:
         core.insert(database, pin, domain, username, password)
-        print "Added password"
+        print "Added password, copied to clipboard"
 
 def password(database, pin, domain, username):
     allresults = core.password(database, pin, domain, username)
     if isinstance(allresults, tuple):
         p = subprocess.Popen(["pbcopy"], stdin = subprocess.PIPE)
         p.stdin.write(allresults[2])
-        print "Found password, copied to pasteboard"
+        print "Found password, copied to clipboard"
     else:
         print "Found multiple matches:"
         domains = {}
@@ -71,7 +73,7 @@ def pin(keyfile):
 def parseArgs(argv):
     args = {}
     args['database'] = argv[0]
-    args['keyfile'] = argv[1]
+    args['pin'] = pin(argv[1])
     try:
         args['domain'] = argv[2]
         args['username'] = argv[3]
@@ -82,17 +84,19 @@ def parseArgs(argv):
 
 def main(args):
     args = parseArgs(args)
-    args['pin'] = pin(args['keyfile'])
-    if 'password' in args:
-        if args['password'] == 'new':
-            args['password'] = core.generate(10)
-        add(args['database'], args['pin'], args['domain'], args['username'], args['password'])
-    elif 'username' in args:
-        password(args['database'], args['pin'], args['domain'], args['username'])
-    elif 'domain' in args:
-        users(args['database'], args['domain'])
-    else:
-        domains(args['database'])
+    if 'domain' in args:
+        if 'username' in args:
+            if 'password' in args:
+                if args['password'] == 'new':
+                    args['password'] = core.generate(10)
+                add(args['database'], args['pin'], args['domain'], args['username'], args['password'])
+            else:
+                password(args['database'], args['pin'], args['domain'], args['username'])
+        else:
+            if args['domain'] == 'list':
+                domains(args['database'])
+            else:
+                users(args['database'], args['domain'])
 
 if __name__ == "__main__":
     main(sys.argv[1:])
