@@ -6,10 +6,7 @@ import string
 import hashlib
 import sqlite3
 import random
-
-LIBS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "libs")
-sys.path.append(LIBS_PATH)
-from aes import AESModeOfOperation
+from libs.aes import AESModeOfOperation
 
 class Database():
     
