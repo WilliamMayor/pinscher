@@ -38,13 +38,13 @@ class Vault():
     @staticmethod
     def get_key_iv(keyfile):
         with open(keyfile, 'rb') as f:
-            return f.read().split('\n',1)
+            return [s.decode('hex') for s in f.read().split('\n',1)]
 
     @staticmethod
     def save_key_iv(keyfile, key, iv):
         with open(keyfile, 'wb') as f:
-            f.write("%s\n" % key)
-            f.write(iv)
+            f.write("%s\n" % key.encode('hex'))
+            f.write(iv.encode('hex'))
 
     @staticmethod
     def make_key_iv(pin, domain, username):
@@ -100,19 +100,19 @@ def password(database, keyfile, pin, domain, username):
                 cursor.execute(query, [domain, username])
                 allresults = cursor.fetchall()
         if len(allresults) == 1:
-            key, iv = Vault.make_key_iv(pin, domain, username)
+            key, iv = Vault.make_key_iv(pin, allresults[0][0], allresults[0][1])
             return [(allresults[0][0], allresults[0][1], Vault.decrypt(key, iv, allresults[0][2]))]
         else:
             return [(r[0], r[1], None) for r in allresults]
 
-def users(database, domain):
-    with Database(database) as cursor:
+def users(database, keyfile, domain):
+    with Database(database, keyfile) as cursor:
         query = "SELECT domain, username FROM Credentials WHERE domain LIKE (? || '%')"
         cursor.execute(query, [domain])
         return cursor.fetchall()
 
-def domains(database):
-    with Database(database) as cursor:
+def domains(database, keyfile):
+    with Database(database, keyfile) as cursor:
         query = "SELECT DISTINCT domain FROM Credentials"
         cursor.execute(query)
         return [d[0] for d in cursor.fetchall()]
