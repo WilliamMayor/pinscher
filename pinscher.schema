@@ -6,4 +6,5 @@ CREATE TABLE Credentials(
     PRIMARY KEY (domain, username)
 );
 CREATE INDEX credentials_domain_index ON Credentials(domain);
+CREATE INDEX credentials_username_index ON Credentials(username);
 COMMIT;
