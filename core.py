@@ -6,7 +6,7 @@ import string
 import hashlib
 import sqlite3
 import random
-from libs.Crypto.Cipher import AES
+from Crypto.Cipher import AES
 
 class Database():
     
