@@ -1,14 +1,14 @@
 #! /usr/bin/python
 
-import os
 import sys
-import argparse
 import subprocess
-import core
+import pinschercore as core
+
 
 def _pbcopy(text):
-    p = subprocess.Popen(["pbcopy"], stdin = subprocess.PIPE)
+    p = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
     p.stdin.write(text)
+
 
 def add(database, keyfile, pin, domain, username, password):
     allresults = core.password(database, keyfile, pin, domain, username)
@@ -19,6 +19,7 @@ def add(database, keyfile, pin, domain, username, password):
     else:
         core.insert(database, keyfile, pin, domain, username, password)
         print "Added password, copied to clipboard"
+
 
 def password(database, keyfile, pin, domain, username):
     allresults = core.password(database, keyfile, pin, domain, username)
@@ -33,6 +34,7 @@ def password(database, keyfile, pin, domain, username):
         for key in domains:
             print "%s: %s" % (key, ', '.join(domains[key]))
 
+
 def _to_dict(results):
     domains = {}
     for result in results:
@@ -41,6 +43,7 @@ def _to_dict(results):
         else:
             domains[result[0]] = [result[1]]
     return domains
+
 
 def users(database, keyfile, domain):
     print "Usernames:"
@@ -52,6 +55,7 @@ def users(database, keyfile, domain):
         for key in domains:
             print "%s: %s" % (key, ', '.join(domains[key]))
 
+
 def domains(database, keyfile):
     print "Domains:"
     allresults = core.domains(database, keyfile)
@@ -60,6 +64,7 @@ def domains(database, keyfile):
     else:
         for domain in allresults:
             print domain
+
 
 def parseArgs(argv):
     args = {}
@@ -73,6 +78,7 @@ def parseArgs(argv):
     except IndexError:
         pass
     return args
+
 
 def main(args):
     args = parseArgs(args)
