@@ -1,12 +1,13 @@
 #! /bin/python
 
-import os
 import sys
 import argparse
 from pinscher import core
 
+
 def delete(database, keyfile, pin, domain, username, password):
     core.delete(database, keyfile, pin, domain, username, password)
+
 
 def add(database, keyfile, pin, domain, username, password):
     allresults = core.password(database, keyfile, pin, domain, username)
@@ -14,6 +15,7 @@ def add(database, keyfile, pin, domain, username, password):
         core.update(database, keyfile, pin, domain, username, password)
     else:
         core.insert(database, keyfile, pin, domain, username, password)
+
 
 def password(database, keyfile, pin, domain, username):
     allresults = core.password(database, keyfile, pin, domain, username)
@@ -26,6 +28,7 @@ def password(database, keyfile, pin, domain, username):
         for key in domains:
             print "%s: %s" % (key, ', '.join(domains[key]))
 
+
 def _to_dict(results):
     domains = {}
     for result in results:
@@ -35,30 +38,34 @@ def _to_dict(results):
             domains[result[0]] = [result[1]]
     return domains
 
+
 def users(database, keyfile, domain):
     allresults = core.users(database, keyfile, domain)
     domains = _to_dict(allresults)
     for key in domains:
         print "%s: %s" % (key, ', '.join(domains[key]))
 
+
 def domains(database, keyfile):
     allresults = core.domains(database, keyfile)
     for domain in allresults:
         print domain
 
+
 def parseArgs(args):
-    parser = argparse.ArgumentParser(description = "pinscher - Password manager from the terminal")
-    parser.add_argument("database", action = "store", help = "The pinscher database to look in")
-    parser.add_argument("keyfile", action = "store", help = "The keyfile used to lock the database")
-    parser.add_argument("--domain", action = "store", help = "The domain to assign the credentials to")
-    parser.add_argument("--username", action = "store", help = "The username")
-    parser.add_argument("--pin", action = "store", help = "The PIN used to lock the passwords")
-    parser.add_argument("--delete", action = "store_true", default = False, help = "Flag to indicate that this record should be deleted")
+    parser = argparse.ArgumentParser(description="pinscher - Password manager from the terminal")
+    parser.add_argument("database", action="store", help="The pinscher database to look in")
+    parser.add_argument("keyfile", action="store", help="The keyfile used to lock the database")
+    parser.add_argument("--domain", action="store", help="The domain to assign the credentials to")
+    parser.add_argument("--username", action="store", help="The username")
+    parser.add_argument("--pin", action="store", help="The PIN used to lock the passwords")
+    parser.add_argument("--delete", action="store_true", default=False, help="Flag to indicate that this record should be deleted")
     pass_or_new = parser.add_mutually_exclusive_group(required=False)
-    pass_or_new.add_argument("--password", action = "store", default = None, help = "The new password")
-    pass_or_new.add_argument("--new", action = "store_true", default = False, help = "Generate a new random password")
+    pass_or_new.add_argument("--password", action="store", default=None, help="The new password")
+    pass_or_new.add_argument("--new", action="store_true", default=False, help="Generate a new random password")
 
     return parser.parse_args(args)
+
 
 def main(args):
     args = parseArgs(args)
