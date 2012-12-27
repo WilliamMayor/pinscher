@@ -26,3 +26,9 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 venv
+/java/Pinscher/nbproject/private/
+MANIFEST
+java/Pinscher/nbproject
+java/Pinscher/lib
+build.xml
+manifest.mf
