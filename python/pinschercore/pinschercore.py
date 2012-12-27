@@ -1,17 +1,14 @@
-#! /bin/python
-
 import os
-import sys
 import string
 import hashlib
 import sqlite3
 import random
 from Crypto.Cipher import AES
 
+
 class Database():
-    
+
     def __init__(self, path, keyfile):
-        dbcon = None
         self.path = path
         self.key, self.iv = Vault.get_key_iv(keyfile)
         with open(path, 'rb') as f:
@@ -27,18 +24,19 @@ class Database():
             self.dbcon.commit()
         else:
             self.dbcon.rollback()
-        lines = list(self.dbcon.iterdump())  
+        lines = list(self.dbcon.iterdump())
         with open(self.path, 'wb') as f:
                 f.write(Vault.encrypt(self.key, self.iv, '\n'.join(lines)))
         self.dbcon.close()
         self.dbcon = None
+
 
 class Vault():
 
     @staticmethod
     def get_key_iv(keyfile):
         with open(keyfile, 'rb') as f:
-            return [s.decode('hex') for s in f.read().split('\n',1)]
+            return [s.decode('hex') for s in f.read().split('\n', 1)]
 
     @staticmethod
     def save_key_iv(keyfile, key, iv):
@@ -65,8 +63,10 @@ class Vault():
         encryptor = AES.new(key, AES.MODE_CBC, iv)
         return encryptor.decrypt(ciphertext.decode('hex')).strip()
 
+
 def generate(size):
     return ''.join(random.choice(string.digits + string.letters + string.punctuation) for x in range(size))
+
 
 def delete(database, keyfile, pin, domain, username, password):
     with Database(database, keyfile) as cursor:
@@ -74,17 +74,20 @@ def delete(database, keyfile, pin, domain, username, password):
         key, iv = Vault.make_key_iv(pin, domain, username)
         cursor.execute(query, [domain, username, Vault.encrypt(key, iv, password)])
 
+
 def update(database, keyfile, pin, domain, username, password):
     with Database(database, keyfile) as cursor:
         query = "UPDATE Credentials SET password = ? WHERE domain = ? AND username = ?"
         key, iv = Vault.make_key_iv(pin, domain, username)
         cursor.execute(query, [Vault.encrypt(key, iv, password), domain, username])
 
+
 def insert(database, keyfile, pin, domain, username, password):
     with Database(database, keyfile) as cursor:
         query = "INSERT INTO Credentials(domain, username, password) VALUES(?,?,?)"
         key, iv = Vault.make_key_iv(pin, domain, username)
         cursor.execute(query, [domain, username, Vault.encrypt(key, iv, password)])
+
 
 def password(database, keyfile, pin, domain, username):
     with Database(database, keyfile) as cursor:
@@ -105,11 +108,13 @@ def password(database, keyfile, pin, domain, username):
         else:
             return [(r[0], r[1], None) for r in allresults]
 
+
 def users(database, keyfile, domain):
     with Database(database, keyfile) as cursor:
         query = "SELECT domain, username FROM Credentials WHERE domain LIKE (? || '%')"
         cursor.execute(query, [domain])
         return cursor.fetchall()
+
 
 def domains(database, keyfile):
     with Database(database, keyfile) as cursor:
@@ -117,11 +122,17 @@ def domains(database, keyfile):
         cursor.execute(query)
         return [d[0] for d in cursor.fetchall()]
 
+
 if __name__ == "__main__":
+    with Database('/Users/william/Dropbox/.pinscher.db', '/Users/william/.pinscher.keyfile') as cursor:
+        query = "SELECT DISTINCT domain FROM Credentials"
+        #cursor.execute(query)
+        #print [d[0] for d in cursor.fetchall()]
+    exit()
     # Let's run some tests.
     import tempfile
 
-    key, iv = Vault.make_key_iv(1234,'domain','username')
+    key, iv = Vault.make_key_iv(1234, 'domain', 'username')
 
     #vault saves and loads key iv
     with tempfile.NamedTemporaryFile() as tempf:
@@ -129,7 +140,7 @@ if __name__ == "__main__":
         assert [key, iv] == Vault.get_key_iv(tempf.name)
 
     #vault encrypts and decrypts
-    key, iv = Vault.make_key_iv(1234,'domain','username')
+    key, iv = Vault.make_key_iv(1234, 'domain', 'username')
     plaintext = 'test'
     ciphertext = Vault.encrypt(key, iv, plaintext)
     assert plaintext == Vault.decrypt(key, iv, ciphertext)
@@ -145,7 +156,7 @@ if __name__ == "__main__":
             with Database(tempdb.name, tempkeyfile.name) as db:
                 #loaded from minimal file
                 pass
-    
+
     # can insert into database
     with tempfile.NamedTemporaryFile() as tempkeyfile:
         Vault.save_key_iv(tempkeyfile.name, key, iv)
