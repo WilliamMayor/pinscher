@@ -1,13 +1,14 @@
-#!/usr/bin/env python
-
 from distutils.core import setup
 
-setup(name='pinscher-core',
-      version='0.8',
-      description='Core utilities for dealing with Pinscher password files',
-      author='William Mayor',
-      author_email='mail@williammayor.co.uk',
-      url='pinscher.williammayor.co.uk',
-      requires=['pycrypto'],
-      py_modules=['pinschercore'],
-      )
+setup(
+    name='pinscher-core',
+    version='0.1dev',
+    author='William Mayor',
+    author_email='mail@williammayor.co.uk',
+    packages=['pinschercore', 'pinschercore.test', ],
+    url='http://pinscher.williammayor.co.uk',
+    license='LICENSE.txt',
+    description='Core utilities for interacting with pinscher password files',
+    long_description=open('README.txt').read(),
+    install_requires=['pycrypto', ],
+)
