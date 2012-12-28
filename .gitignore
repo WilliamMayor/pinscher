@@ -32,3 +32,5 @@ java/Pinscher/nbproject
 java/Pinscher/lib
 build.xml
 manifest.mf
+pinscher.sublime-project
+pinscher.sublime-workspace
