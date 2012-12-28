@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pinscher-core',
-    version='0.1.1dev',
+    version='0.1.2dev',
     author='William Mayor',
     author_email='mail@williammayor.co.uk',
     packages=['pinschercore', 'pinschercore.test', ],

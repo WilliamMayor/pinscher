@@ -44,7 +44,10 @@ Again, virtualenv_ is recommended.
 
 *or*
 
-You can download the files directly from PyPi or the Pinscher homepage.
+You can download the files directly from PyPi_ or the `Pinscher homepage`_.
+
+.. _PyPi: http://pypi.python.org/pypi/pinscher-core/
+.. _Pinscher homepage: http://pinscher.williammayor.co.uk
 
 Dependencies
 ````````````
