@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from pinscher import core
+from pinschercore import pinschercore as core
 
 
 def delete(database, keyfile, pin, domain, username, password):
@@ -62,7 +62,7 @@ def parseArgs(args):
     parser.add_argument("--delete", action="store_true", default=False, help="Flag to indicate that this record should be deleted")
     pass_or_new = parser.add_mutually_exclusive_group(required=False)
     pass_or_new.add_argument("--password", action="store", default=None, help="The new password")
-    pass_or_new.add_argument("--new", action="store_true", default=False, help="Generate a new random password")
+    pass_or_new.add_argument("--new", action="store", default=10, help="Generate a new random password")
 
     return parser.parse_args(args)
 
@@ -76,7 +76,7 @@ def main(args):
                     delete(args.database, args.keyfile, args.pin, args.domain, args.username, args.password)
                 if args.new or args.password:
                     if args.new:
-                        args.password = core.generate(10)
+                        args.password = core.generate(args.new)
                     add(args.database, args.keyfile, args.pin, args.domain, args.username, args.password)
                 else:
                     password(args.database, args.keyfile, args.pin, args.domain, args.username)
