@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name='pinscher-core',
-    version='0.1.2dev',
+    name='pinscher',
+    version='0.1dev',
     author='William Mayor',
     author_email='mail@williammayor.co.uk',
     url='http://pinscher.williammayor.co.uk',
@@ -10,7 +10,7 @@ setup(
     description='Core utilities for interacting with pinscher password files',
     long_description=open('README.txt').read(),
     install_requires=['pycrypto', ],
-    packages=['pinschercore', 'pinschercore.test', ],
-    test_suite='pinschercore.test',
-    scripts=['scripts/pinschercli', 'scripts/pinscheralfred']
+    packages=['pinscher', 'pinscher.test', ],
+    test_suite='pinscher.test',
+    scripts=['scripts/pinscher-cli', 'scripts/pinscher-alfred']
 )

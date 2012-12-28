@@ -1,6 +1,6 @@
 import unittest
 import tempfile
-from pinschercore.pinschercore import Vault
+from pinscher.pinscher import Vault
 
 
 class TestVault(unittest.TestCase):

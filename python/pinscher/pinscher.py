@@ -1,5 +1,5 @@
 """
-    pinscher-core. The core utilities for interacting with pinscher password files.
+    pinscher. The core utilities for interacting with pinscher password files.
     Copyright (C) 2012  William Mayor
 
     This program is free software: you can redistribute it and/or modify

@@ -2,7 +2,7 @@
 
 import sys
 import subprocess
-import pinschercore as core
+from pinscher import pinscher as core
 
 
 def _pbcopy(text):

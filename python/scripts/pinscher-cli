@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from pinschercore import pinschercore as core
+from pinscher import pinscher as core
 
 
 def delete(database, keyfile, pin, domain, username, password):

@@ -1,7 +1,7 @@
 import unittest
 import tempfile
 import os
-from pinschercore import pinschercore as core
+from pinscher import pinscher as core
 
 
 def walk_up(bottom):
@@ -32,7 +32,9 @@ def walk_up(bottom):
 def find_schema():
     for current, dirs, files in walk_up(os.path.dirname(os.path.abspath(__file__))):
         if 'pinscher.schema' in files:
-            return os.path.join(current, 'pinscher.schema')
+            path = os.path.join(current, 'pinscher.schema')
+            if not os.path.islink(path):
+                return path
 
 
 class TestDatabase(unittest.TestCase):
