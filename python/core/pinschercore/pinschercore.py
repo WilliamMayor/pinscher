@@ -1,4 +1,22 @@
-import os
+"""
+    pinscher-core. The core utilities for interacting with pinscher password files.
+    Copyright (C) 2012  William Mayor
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    To contact the author please email: mail@williammayor.co.uk
+"""
 import string
 import hashlib
 import sqlite3
@@ -121,73 +139,3 @@ def domains(database, keyfile):
         query = "SELECT DISTINCT domain FROM Credentials"
         cursor.execute(query)
         return [d[0] for d in cursor.fetchall()]
-
-
-if __name__ == "__main__":
-    with Database('/Users/william/Dropbox/.pinscher.db', '/Users/william/.pinscher.keyfile') as cursor:
-        query = "SELECT DISTINCT domain FROM Credentials"
-        #cursor.execute(query)
-        #print [d[0] for d in cursor.fetchall()]
-    exit()
-    # Let's run some tests.
-    import tempfile
-
-    key, iv = Vault.make_key_iv(1234, 'domain', 'username')
-
-    #vault saves and loads key iv
-    with tempfile.NamedTemporaryFile() as tempf:
-        Vault.save_key_iv(tempf.name, key, iv)
-        assert [key, iv] == Vault.get_key_iv(tempf.name)
-
-    #vault encrypts and decrypts
-    key, iv = Vault.make_key_iv(1234, 'domain', 'username')
-    plaintext = 'test'
-    ciphertext = Vault.encrypt(key, iv, plaintext)
-    assert plaintext == Vault.decrypt(key, iv, ciphertext)
-
-    #database loads saves and loads (test the initialising)
-    with tempfile.NamedTemporaryFile() as tempkeyfile:
-        Vault.save_key_iv(tempkeyfile.name, key, iv)
-        with tempfile.NamedTemporaryFile() as tempdb:
-            with Database(tempdb.name, tempkeyfile.name) as db:
-                #loaded from blank file
-                pass
-            #closed and saved
-            with Database(tempdb.name, tempkeyfile.name) as db:
-                #loaded from minimal file
-                pass
-
-    # can insert into database
-    with tempfile.NamedTemporaryFile() as tempkeyfile:
-        Vault.save_key_iv(tempkeyfile.name, key, iv)
-        with tempfile.NamedTemporaryFile() as tempdb:
-            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pinscher.schema"), "r") as f:
-                schema = f.read()
-                with Database(tempdb.name, tempkeyfile.name) as cursor:
-                    cursor.executescript(schema)
-                insert(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username', 'password')
-                assert [('domain', 'username', 'password')] == password(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username')
-
-    # can update database records
-    with tempfile.NamedTemporaryFile() as tempkeyfile:
-        Vault.save_key_iv(tempkeyfile.name, key, iv)
-        with tempfile.NamedTemporaryFile() as tempdb:
-            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pinscher.schema"), "r") as f:
-                schema = f.read()
-                with Database(tempdb.name, tempkeyfile.name) as cursor:
-                    cursor.executescript(schema)
-                insert(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username', 'password')
-                update(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username', 'notpassword')
-                assert [('domain', 'username', 'notpassword')] == password(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username')
-
-    # can delete database records
-    with tempfile.NamedTemporaryFile() as tempkeyfile:
-        Vault.save_key_iv(tempkeyfile.name, key, iv)
-        with tempfile.NamedTemporaryFile() as tempdb:
-            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pinscher.schema"), "r") as f:
-                schema = f.read()
-                with Database(tempdb.name, tempkeyfile.name) as cursor:
-                    cursor.executescript(schema)
-                insert(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username', 'password')
-                delete(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username', 'password')
-                assert [] == password(tempdb.name, tempkeyfile.name, 1234, 'domain', 'username')
