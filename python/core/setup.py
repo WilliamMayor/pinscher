@@ -2,8 +2,8 @@
 
 from distutils.core import setup
 
-setup(name='pinschercore',
-      version='1.0',
+setup(name='pinscher-core',
+      version='0.8',
       description='Core utilities for dealing with Pinscher password files',
       author='William Mayor',
       author_email='mail@williammayor.co.uk',

@@ -2,12 +2,12 @@
 
 from distutils.core import setup
 
-setup(name='pinschercli',
+setup(name='pinscher-alfred',
       version='1.0',
-      description='Terminal interface for Pinscher password files',
+      description='Pinscher based Python scripts to be used via Alfred',
       author='William Mayor',
       author_email='mail@williammayor.co.uk',
       url='pinscher.williammayor.co.uk',
       requires=['pinschercore'],
-      py_modules=['pinschercli'],
+      py_modules=['pinscheralfred'],
       )
