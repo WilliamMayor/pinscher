@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! python
 
 import sys
 import subprocess
@@ -100,7 +100,4 @@ def main(args):
                 users(args['database'], args['keyfile'], args['domain'])
 
 if __name__ == "__main__":
-    try:
-        main(sys.argv[1:])
-    except Exception as e:
-        print e
+    main(sys.argv[1:])
