@@ -29,92 +29,113 @@ class TestPinscher(unittest.TestCase):
         self.db.close()
         self.keyfile.close()
 
+    def insert(self, pin=1234, domain='domain', username='username', password='password'):
+        core.insert(self.db.name, self.keyfile.name, pin, domain, username, password)
+
+    def update(self, pin=1234, domain='domain', username='username', password='password'):
+        core.update(self.db.name, self.keyfile.name, pin, domain, username, password)
+
+    def delete(self, pin=1234, domain='domain', username='username', password='password'):
+        core.delete(self.db.name, self.keyfile.name, pin, domain, username, password)
+
+    def get(self, pin=None, domain=None, username=None):
+        return core.get(self.db.name, self.keyfile.name, pin=pin, domain=domain, username=username)
+
     def test_insert(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, self.domain, self.username, self.password)
-        self.assertEquals([(self.domain, self.username, self.password)], core.get(self.db.name, self.keyfile.name, self.pin, self.domain, self.username))
+        self.insert()
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
 
     def test_update(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, self.domain, self.username, self.password)
-        core.update(self.db.name, self.keyfile.name, self.pin, self.domain, self.username, 'notpassword')
-        self.assertEquals([(self.domain, self.username, 'notpassword')], core.get(self.db.name, self.keyfile.name, self.pin, self.domain, self.username))
+        self.insert()
+        self.update(password='notpassword')
+        self.assertEquals([(self.domain, self.username, 'notpassword')], self.get(domain=self.domain, username=self.username, pin=self.pin))
 
     def test_delete(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, self.domain, self.username, self.password)
-        core.delete(self.db.name, self.keyfile.name, self.pin, self.domain, self.username, self.password)
-        self.assertEquals([], core.get(self.db.name, self.keyfile.name, self.pin, self.domain, self.username))
+        self.insert()
+        self.delete()
+        self.assertEquals([], self.get())
 
     def test_match_empty(self):
-        self.assertItemsEqual([], core.get(self.db.name, self.keyfile.name, domain='domain'))
-        self.assertItemsEqual([], core.get(self.db.name, self.keyfile.name, username='username'))
-        self.assertItemsEqual([], core.get(self.db.name, self.keyfile.name, domain='domain', username='username'))
-        self.assertItemsEqual([], core.get(self.db.name, self.keyfile.name, pin=1234, domain='domain', username='username'))
+        self.assertItemsEqual([], self.get(domain='domain'))
+        self.assertItemsEqual([], self.get(username='username'))
+        self.assertItemsEqual([], self.get(domain='domain', username='username'))
+        self.assertItemsEqual([], self.get(pin=1234, domain='domain', username='username'))
 
     def test_match_all(self):
         all = []
         for i in range(1, 10):
-            core.insert(self.db.name, self.keyfile.name, self.pin, self.domain + str(i), str(i) + self.username, self.password)
-            all.append((self.domain + str(i), str(i) + self.username, None))
+            u = str(i) + self.username
+            d = self.domain + str(i)
+            self.insert(domain=d, username=u)
+            all.append((d, u, None))
         self.assertItemsEqual(all, core.get(self.db.name, self.keyfile.name))
 
     def test_match_exact_domain(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domain', 'otherusername', None)], core.get(self.db.name, self.keyfile.name, domain='domain'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domain', 'otherusername', None)], self.get(domain='domain'))
 
     def test_match_exact_domain_ignore_like(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domainclose', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ], core.get(self.db.name, self.keyfile.name, domain='domain'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domainclose', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ], self.get(domain='domain'))
 
     def test_match_like_domain(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domainclose', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domainclose', 'otherusername', None)], core.get(self.db.name, self.keyfile.name, domain='dom'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domainclose', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domainclose', 'otherusername', None)], self.get(domain='dom'))
 
     def test_match_exact_domain_exact_username(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ], core.get(self.db.name, self.keyfile.name, domain='domain', username='username'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ], self.get(domain='domain', username='username'))
 
     def test_match_exact_domain_like_username(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domain', 'otherusername', None)], core.get(self.db.name, self.keyfile.name, domain='domain', username='user'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domain', 'otherusername', None)], self.get(domain='domain', username='user'))
 
     def test_match_like_domain_like_username(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domainclose', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', self.username, self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domainclose', 'otherusername', None)], core.get(self.db.name, self.keyfile.name, domain='dom', username='user'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domainclose', username='otherusername')
+        self.insert(domain='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domainclose', 'otherusername', None)], self.get(domain='dom', username='user'))
 
     def test_match_exact_username(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain2', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', 'unrelated', self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'username', None)], core.get(self.db.name, self.keyfile.name, username='username'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain2', username='username')
+        self.insert(domain='unrelated', username='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'username', None)], self.get(username='username'))
 
     def test_match_exact_username_ignore_like(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain2', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', 'unrelated', self.password)
-        self.assertItemsEqual([('domain', 'username', None), ], core.get(self.db.name, self.keyfile.name, username='username'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain2', username='otherusername')
+        self.insert(domain='unrelated', username='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ], self.get(username='username'))
 
     def test_match_like_username(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain2', 'otherusername', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', 'unrelated', self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'otherusername', None)], core.get(self.db.name, self.keyfile.name, username='user'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain2', username='otherusername')
+        self.insert(domain='unrelated', username='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'otherusername', None)], self.get(username='user'))
 
     def test_match_exact_username_like_domain(self):
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'domain2', 'username', self.password)
-        core.insert(self.db.name, self.keyfile.name, self.pin, 'unrelated', 'unrelated', self.password)
-        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'username', None)], core.get(self.db.name, self.keyfile.name, domain='dom', username='username'))
+        self.insert(domain='domain', username='username')
+        self.insert(domain='domain2', username='username')
+        self.insert(domain='unrelated', username='unrelated')
+        self.assertItemsEqual([('domain', 'username', None), ('domain2', 'username', None)], self.get(domain='dom', username='username'))
 
     def test_pin_wrong(self):
-        raise Exception("Not tested yet")
+        self.insert(domain='domain', username='username')
+        get = self.get(domain='domain', username='username', pin=self.pin + 1)
+        self.assertNotEqual(get[0][2], self.password)
+
+    def test_get_password(self):
+        self.insert(domain='domain', username='username')
+        get = self.get(domain='domain', username='username', pin=self.pin)
+        self.assertEqual(get[0][2], self.password)
