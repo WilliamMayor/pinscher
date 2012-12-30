@@ -10,7 +10,7 @@ def delete(database, keyfile, pin, domain, username, password):
 
 
 def add(database, keyfile, pin, domain, username, password):
-    allresults = core.password(database, keyfile, pin, domain, username)
+    allresults = core.get(database, keyfile, pin, domain, username)
     if len(allresults) == 1:
         core.update(database, keyfile, pin, domain, username, password)
     else:
@@ -18,38 +18,32 @@ def add(database, keyfile, pin, domain, username, password):
 
 
 def password(database, keyfile, pin, domain, username):
-    allresults = core.password(database, keyfile, pin, domain, username)
+    allresults = core.get(database, keyfile, pin, domain, username)
+    display = []
     if len(allresults) == 1:
-        print "  Domain: %s" % allresults[0][0]
-        print "Username: %s" % allresults[0][1]
-        print "Password: %s" % allresults[0][2]
+        display.append("  Domain: %s" % allresults[0][0])
+        display.append("Username: %s" % allresults[0][1])
+        display.append("Password: %s" % allresults[0][2])
     else:
-        domains = _to_dict(allresults)
-        for key in domains:
-            print "%s: %s" % (key, ', '.join(domains[key]))
-
-
-def _to_dict(results):
-    domains = {}
-    for result in results:
-        if result[0] in domains:
-            domains[result[0]].append(result[1])
-        else:
-            domains[result[0]] = [result[1]]
-    return domains
+        for (domain, username, password) in allresults:
+            display.append("%s: %s" % (domain, username))
+    return '\n'.join(display)
 
 
 def users(database, keyfile, domain):
-    allresults = core.users(database, keyfile, domain)
-    domains = _to_dict(allresults)
-    for key in domains:
-        print "%s: %s" % (key, ', '.join(domains[key]))
+    allresults = core.get(database, keyfile, domain)
+    display = []
+    for (domain, username, password) in allresults:
+        display.append("%s: %s" % (domain, username))
+    return '\n'.join(display)
 
 
 def domains(database, keyfile):
-    allresults = core.domains(database, keyfile)
-    for domain in allresults:
-        print domain
+    allresults = core.get(database, keyfile)
+    display = []
+    for domain in set([r[0] for r in allresults]):
+        display.append(domain)
+    return '\n'.join(display)
 
 
 def parseArgs(args):
@@ -67,7 +61,7 @@ def parseArgs(args):
     return parser.parse_args(args)
 
 
-def main(args):
+def go(args):
     args = parseArgs(args)
     if args.domain:
         if args.username:
@@ -87,5 +81,11 @@ def main(args):
     else:
         domains(args.database, args.keyfile)
 
+
+def main():
+    args = sys.argv[1:]
+    result = go(args)
+    print result
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

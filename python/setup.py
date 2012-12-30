@@ -12,5 +12,10 @@ setup(
     install_requires=['pycrypto', ],
     packages=['pinscher', 'pinscher.test', ],
     test_suite='pinscher.test',
-    scripts=['scripts/pinscher-cli', 'scripts/pinscher-alfred']
+    entry_points={
+        'console_scripts': [
+            'pinscher-cli = pinscher.scripts.pinscher_cli:main'
+        ],
+        'gui_scripts': []
+    }
 )
