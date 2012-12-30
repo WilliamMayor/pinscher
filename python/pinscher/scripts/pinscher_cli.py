@@ -47,7 +47,7 @@ def domains(database, keyfile):
 
 
 def parseArgs(args):
-    parser = argparse.ArgumentParser(description="pinscher - Password manager from the terminal")
+    parser = argparse.ArgumentParser(description="pinscher-cli - Password manager from the terminal")
     parser.add_argument("database", action="store", help="The pinscher database to look in")
     parser.add_argument("keyfile", action="store", help="The keyfile used to lock the database")
     parser.add_argument("--domain", action="store", help="The domain to assign the credentials to")
@@ -56,7 +56,7 @@ def parseArgs(args):
     parser.add_argument("--delete", action="store_true", default=False, help="Flag to indicate that this record should be deleted")
     pass_or_new = parser.add_mutually_exclusive_group(required=False)
     pass_or_new.add_argument("--password", action="store", default=None, help="The new password")
-    pass_or_new.add_argument("--new", action="store", default=10, help="Generate a new random password")
+    pass_or_new.add_argument("--new", action="store", default=None, help="Generate a new random password")
 
     return parser.parse_args(args)
 
@@ -68,24 +68,25 @@ def go(args):
             if args.pin:
                 if args.password and args.delete:
                     delete(args.database, args.keyfile, args.pin, args.domain, args.username, args.password)
-                if args.new or args.password:
+                elif args.new or args.password:
                     if args.new:
-                        args.password = core.generate(args.new)
+                        args.password = core.generate()
                     add(args.database, args.keyfile, args.pin, args.domain, args.username, args.password)
                 else:
-                    password(args.database, args.keyfile, args.pin, args.domain, args.username)
+                    return password(args.database, args.keyfile, args.pin, args.domain, args.username)
             else:
-                print "Need PIN to unlock database"
+                return "Need PIN to unlock database"
         else:
-            users(args.database, args.keyfile, args.domain)
+            return users(args.database, args.keyfile, args.domain)
     else:
-        domains(args.database, args.keyfile)
+        return domains(args.database, args.keyfile)
 
 
 def main():
     args = sys.argv[1:]
     result = go(args)
-    print result
+    if result:
+        print result
 
 if __name__ == "__main__":
     main()
