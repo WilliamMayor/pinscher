@@ -2,6 +2,7 @@ import unittest
 import tempfile
 from pinscher import pinscher as core
 from find_schema import find_schema
+from sqlite3 import IntegrityError
 
 
 class TestPinscher(unittest.TestCase):
@@ -41,19 +42,52 @@ class TestPinscher(unittest.TestCase):
     def get(self, pin=None, domain=None, username=None):
         return core.get(self.db.name, self.keyfile.name, pin=pin, domain=domain, username=username)
 
+    def test_sqli(self):
+        self.insert()
+        self.get(username='1\'; DELETE FROM Credentials WHERE TRUE')
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
     def test_insert(self):
         self.insert()
         self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_insert_twice(self):
+        self.insert()
+        self.assertRaises(IntegrityError, self.insert)
 
     def test_update(self):
         self.insert()
         self.update(password='notpassword')
         self.assertEquals([(self.domain, self.username, 'notpassword')], self.get(domain=self.domain, username=self.username, pin=self.pin))
 
-    def test_delete(self):
+    def test_update_nothing(self):
+        self.update(password='notpassword')
+        self.assertEquals([], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_delete_correct(self):
         self.insert()
         self.delete()
-        self.assertEquals([], self.get())
+        self.assertEquals([], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_delete_bad_pin(self):
+        self.insert()
+        self.delete(pin=self.pin + 1)
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_delete_bad_password(self):
+        self.insert()
+        self.delete(password=self.password + 'a')
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_delete_partial_domain(self):
+        self.insert()
+        self.delete(domain=self.domain[0:3])
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
+
+    def test_delete_partial_username(self):
+        self.insert()
+        self.delete(username=self.username[0:3])
+        self.assertEquals([(self.domain, self.username, self.password)], self.get(domain=self.domain, username=self.username, pin=self.pin))
 
     def test_match_empty(self):
         self.assertItemsEqual([], self.get(domain='domain'))
