@@ -1,0 +1,40 @@
+GET
+/api/keyfiles/[<keyfile>/]
+/api/[keyfiles/<keyfile>/]domains/[<domain>/[usernames/[<username>/[?pin=<pin>]]]]
+/api/[keyfiles/<keyfile>/]search/?q=<query>[&pin=<pin>]
+
+POST
+/api/keyfiles/
+    {
+        location: <location>,
+        [timeout: <timeout>]
+    }
+/api/keyfiles/<keyfile>/domains/
+/api/keyfiles/<keyfile>/usernames/
+    {
+        domain: <domain>,
+        username: <username>,
+        pin: <pin>, 
+        [password: <password>]
+    }
+
+PUT
+/api/keyfiles/
+    {
+        location: <location>,
+        [timeout: <timeout>]
+    }
+/api/keyfiles/<keyfile>/domains/<domain>/usernames/<username>/
+/api/keyfiles/<keyfile>/usernames/<username>/domains/<domain>/
+    {
+        domain: <domain>,
+        username: <username>,
+        old_pin: <old_pin>,
+        [new_pin: <new_pin>,]
+        [new_password: <new_password>]
+    }
+
+DELETE
+/api/keyfiles/<keyfile>/
+/api/keyfiles/<keyfile>/domains/<domain>/usernames/<username>/?pin=<pin>
+/api/keyfiles/<keyfile>/usernames/<username>/domains/<domain>/?pin=<pin>

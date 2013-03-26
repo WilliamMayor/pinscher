@@ -1,0 +1,9 @@
+BEGIN TRANSACTION;
+CREATE TABLE Keyfiles(
+    name TEXT PRIMARY KEY,
+    location TEXT UNIQUE, 
+    timeout INT
+);
+INSERT INTO Keyfiles(name, location, timeout) VALUES('default', '/Users/william/.pinscher/default.keyfile', 60);
+INSERT INTO Keyfiles(name, location, timeout) VALUES('test', '/Users/william/.pinscher/test.keyfile', 120);
+COMMIT;
