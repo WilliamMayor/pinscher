@@ -19,10 +19,13 @@ function show_results(results) {
         var td_username = $("<td>");
         td_username.text(value['username']);
         var tr = $("<tr>");
+        tr.data('keyfile', value['keyfile']);
+        tr.data('domain', value['domain']);
+        tr.data('username', value['username']);
         tr.append(td_database);
         tr.append(td_domain);
         tr.append(td_username);
-        tr.append($("<td>********</td>"));
+        tr.append($("<td class='password'>********</td>"));
         tbody.append(tr);
     });
     $("body table").show();

@@ -65,11 +65,8 @@ html, body {
 #content table tbody tr:nth-child(odd) {
     background-color: #dedede;
 }
-#content table tbody td {
+#content table tbody td.password {
     cursor: pointer;
-}
-#content table tbody td:hover {
-    background-color: #9aBBd2;
 }
 #footer_wrapper {
     position: absolute;
