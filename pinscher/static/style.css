@@ -6,6 +6,13 @@ html, body {
     height: 100%;
     font-family: 'Gill Sans';
 }
+input {
+    border: 1px solid #aaa;
+}
+input:focus {
+    border-color: #01AEF0;
+    outline: none;
+}
 #wrapper {
     position: relative;
     height: 100%;
@@ -16,7 +23,7 @@ html, body {
     height: 85px;
     width: 100%;
     background-color: #dedede;
-    border-bottom: 1px solid #999;
+    border-bottom: 1px solid #aaa;
 }
 #header {
     padding: 0 50px;
@@ -48,15 +55,15 @@ html, body {
 }
 #content table {
     margin: 0 auto;
-    border: 1px solid #999;
+    border: 1px solid #aaa;
     border-collapse: collapse;
 }
 #content table thead {
-    border-bottom: 1px solid #999;
+    border-bottom: 1px solid #aaa;
 }
 #content table td {
     padding: 4px 6px;
-    border-right: 1px solid #999;
+    border-right: 1px solid #aaa;
     min-width: 200px;
 }
 #content table tbody tr.no_results {
@@ -71,7 +78,7 @@ html, body {
 #footer_wrapper {
     position: absolute;
     background-color: #dedede;
-    border-top: 1px solid #999;
+    border-top: 1px solid #aaa;
     height: 30px;
     width: 100%;
     bottom: 0;

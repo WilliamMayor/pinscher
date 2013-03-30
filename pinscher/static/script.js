@@ -42,6 +42,30 @@ function combine_results(list_a, list_b) {
     });
     return list_a;
 }
+function get_pin() {
+    var deferred = $.Deferred();
+    if ($("body").data("pin") !== undefined) {
+        deferred.resolve($("body").data("pin"));
+    } else {
+        var options = {
+            animation: 300,
+            buttons: { 
+                confirm: {
+                    text: 'OK',
+                    action: function(e) { 
+                        $("body").data("pin", e.input);
+                        setTimeout(function(){$("body").removeData("pin")},60000);
+                        deferred.resolve(e.input);
+                        Apprise('close'); 
+                    } 
+                }, 
+            },
+            input: true,
+        };
+        Apprise('What is your PIN?', options);
+    }
+    return deferred;
+}
 $(document).ready(function() {
     hide_results();
     $("#search_box").keyup(function() {
@@ -64,5 +88,19 @@ $(document).ready(function() {
                 show_results(results);
             });
         }
+    });
+    $("tbody").on("click", "td.password", function() {
+        var td = $(this);
+        var tr = td.parent("tr");
+        var keyfile = tr.data("keyfile");
+        var domain = tr.data("domain");
+        var username = tr.data("username");
+        $.when(get_pin()).done(function(pin) {
+            $.getJSON('/api/keyfiles/'+keyfile+'/domains/'+domain+'/usernames/'+username+'/?pin='+pin).success(function(data) {
+                td.text(data['password']);
+                td.removeClass('password');
+                setTimeout(function(){td.text("********"); td.addClass("password")},5000);
+            });
+        })
     });
 });
