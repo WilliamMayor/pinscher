@@ -2,6 +2,7 @@ from tempdir import TempDir
 import unittest
 import os
 import sqlite3
+import hashlib
 
 import pinscher.exceptions
 import pinscher.cli
@@ -164,3 +165,86 @@ class TestCli(unittest.TestCase):
                 for c in ['domain', 'username', 'password', 'iv']:
                     self.assertIn(c, columns)
                 cursor.close()
+
+    def test_load_keyfile(self):
+        with TempDir() as d:
+            details = {'keyfile-path': os.path.join(d.name, 'test.keyfile'),
+                       'database-path': os.path.join(d.name, 'test.database'),
+                       'key': 'cccccccccccccccccccccccccccccccc',
+                       'iv': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                       'length': 5,
+                       'characters': 'abc'
+                       }
+            pinscher.cli.save_keyfile(details)
+            self.assertEqual(details, pinscher.cli.load_keyfile(details['keyfile-path']))
+
+    def test_add_works(self):
+        with TempDir() as d:
+            keyfile = os.path.join(d.name, 'test.keyfile')
+            database = os.path.join(d.name, 'test.database')
+            key = 'cccccccccccccccccccccccccccccccc'
+            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s' % (keyfile, database, key, iv,)
+            pinscher.cli.main(args.split(' '))
+            domain = 'domain'
+            username = 'username'
+            password = 'password'
+            pin = '1234'
+            args = 'add  --keyfile-path %s --domain %s --username %s --password %s --pin %s' % (keyfile, domain, username, password, pin)
+            pinscher.cli.main(args.split(' '))
+            with open(database, 'r') as f:
+                ciphersql = f.read()
+                sql = pinscher.cli.decrypt(key, iv, ciphersql)
+                connection = sqlite3.connect(':memory:')
+                cursor = connection.cursor()
+                cursor.executescript(sql)
+                cursor.execute('SELECT domain, username, password, iv FROM Credentials')
+                row = cursor.fetchone()
+                self.assertEqual(domain, row[0])
+                self.assertEqual(username, row[1])
+                self.assertEqual(password, pinscher.cli.decrypt(hashlib.sha256(domain + username + pin).digest().encode('hex'), row[3], row[2]))
+                cursor.close()
+
+    def test_add_generate_password(self):
+        password = pinscher.cli.generate_password(5, 'abc')
+        self.assertEqual(5, len(password))
+        self.assertTrue(False not in [(c in 'abc') for c in password])
+
+    def test_load_database(self):
+        with TempDir() as d:
+            keyfile = os.path.join(d.name, 'test.keyfile')
+            database = os.path.join(d.name, 'test.database')
+            args = 'init --keyfile-path %s --database-path %s --generate' % (keyfile, database,)
+            pinscher.cli.main(args.split(' '))
+            k = pinscher.cli.load_keyfile(keyfile)
+            db = pinscher.cli.load_database(k)
+            cursor = db.cursor()
+            results = cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
+            self.assertIn(('Credentials',), results)
+            cursor.execute('SELECT * FROM Credentials')
+            cursor.fetchone()
+            columns = [desc[0] for desc in cursor.description]
+            for c in ['domain', 'username', 'password', 'iv']:
+                self.assertIn(c, columns)
+            cursor.close()
+
+    def test_find_works(self):
+        with TempDir() as d:
+            keyfile = os.path.join(d.name, 'test.keyfile')
+            database = os.path.join(d.name, 'test.database')
+            key = 'cccccccccccccccccccccccccccccccc'
+            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s' % (keyfile, database, key, iv,)
+            pinscher.cli.main(args.split(' '))
+            domain = 'domain'
+            username = 'username'
+            password = 'password'
+            pin = '1234'
+            args = 'add  --keyfile-path %s --domain %s --username %s --password %s --pin %s' % (keyfile, domain, username, password, pin)
+            pinscher.cli.main(args.split(' '))
+            domain = 'dom'
+            username = 'user'
+            pin = '1234'
+            args = 'find  --keyfile-path %s --domain %s --username %s --pin %s' % (keyfile, domain, username, pin)
+            result = pinscher.cli.main(args.split(' '))
+            self.assertEqual(result, password)

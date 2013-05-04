@@ -2,10 +2,12 @@ import string
 import sys
 import sqlite3
 import traceback
+import hashlib
 from pkg_resources import resource_string
 
 from Crypto.Cipher import AES
 from Crypto import Random
+from Crypto.Random import random
 
 import exceptions
 
@@ -18,6 +20,20 @@ args_defaults = {
         'generate': {'flag': True, 'xor': 'key'},
         'length': {'default': 32, 'valid': lambda value: int(value) > 0},
         'characters': {'default': string.digits + string.letters + string.punctuation + ' ', 'valid': lambda value: len(value) > 0}
+    }, 'add': {
+        'keyfile-path': {'required': True},
+        'domain': {'required': True},
+        'username': {'required': True},
+        'password': {'xor': 'generate'},
+        'generate': {'flag': True, 'xor': 'password'},
+        'length': {'default': 32, 'valid': lambda value: int(value) > 0},
+        'characters': {'default': string.digits + string.letters + string.punctuation + ' ', 'valid': lambda value: len(value) > 0},
+        'pin': {'required': True}
+    }, 'find': {
+        'keyfile-path': {'required': True},
+        'domain': {'or': 'username'},
+        'username': {'or': 'domain'},
+        'pin': {'required': True}
     }
 }
 
@@ -71,6 +87,13 @@ def generate_key():
     return (s.encode('hex') for s in (key, iv))
 
 
+def generate_password(length, characters):
+    password = []
+    for i in xrange(0, length):
+        password += random.choice(characters)
+    return ''.join(password)
+
+
 def save_keyfile(details):
     with open(details['keyfile-path'], 'w') as f:
         f.write(details['database-path'])
@@ -84,28 +107,53 @@ def save_keyfile(details):
         f.write(details['characters'])
 
 
+def load_keyfile(path):
+    details = {'keyfile-path': path}
+    with open(path, 'r') as f:
+        details['database-path'] = f.readline().strip()
+        details['key'] = f.readline().strip()
+        details['iv'] = f.readline().strip()
+        details['length'] = int(f.readline().strip())
+        details['characters'] = f.readline().strip()
+    return details
+
+
 def encrypt(key, iv, plaintext):
     cipher = AES.new(key.decode('hex'), AES.MODE_CFB, iv.decode('hex'))
-    return cipher.encrypt(plaintext)
+    return cipher.encrypt(plaintext).encode('hex')
 
 
 def decrypt(key, iv, ciphertext):
     cipher = AES.new(key.decode('hex'), AES.MODE_CFB, iv.decode('hex'))
-    return cipher.decrypt(ciphertext)
+    return cipher.decrypt(ciphertext.decode('hex'))
 
 
 def init_database():
     connection = sqlite3.connect(':memory:')
-    cursor = connection.cursor()
     schema = resource_string(__name__, 'schema.sql')
-    cursor.executescript(schema)
-    cursor.close()
+    connection.executescript(schema)
     return connection
 
 
-def save_database(connection, args):
-    with open(args['database-path'], 'wb') as f:
-        f.write(encrypt(args['key'], args['iv'], '\n'.join(connection.iterdump())))
+def save_database(connection, details):
+    with open(details['database-path'], 'wb') as f:
+        f.write(encrypt(details['key'], details['iv'], '\n'.join(connection.iterdump())))
+
+
+def load_database(details):
+    with open(details['database-path'], 'rb') as f:
+        sql = decrypt(details['key'], details['iv'], f.read())
+    connection = sqlite3.connect(':memory:')
+    connection.executescript(sql)
+    return connection
+
+
+def add_credentials(db, details):
+    key = hashlib.sha256(details['domain'] + details['username'] + details['pin']).digest().encode('hex')
+    iv = Random.new().read(AES.block_size).encode('hex')
+    ciphertext = encrypt(key, iv, details['password'])
+    cursor = db.cursor()
+    cursor.execute('INSERT INTO Credentials(domain, username, password, iv) VALUES(?,?,?,?)', (details['domain'], details['username'], ciphertext, iv))
 
 
 def run(args):
@@ -115,6 +163,13 @@ def run(args):
         save_keyfile(args)
         db = init_database()
         save_database(db, args)
+    if args['mode'] == 'add':
+        keyfile = load_keyfile(args['keyfile-path'])
+        if 'generate' in args:
+            args['password'] = generate_password(int(args.get('length', keyfile['length'])), args.get('characters', keyfile['characters']))
+        db = load_database(keyfile)
+        add_credentials(db, args)
+        save_database(db, keyfile)
 
 
 def main(raw_args):
