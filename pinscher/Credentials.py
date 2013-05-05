@@ -31,4 +31,5 @@ class Credentials:
         return equal and (self.domain == other.domain) and (self.username == other.username)
 
     def __repr__(self):
+        print self.__dict__
         return '<Credentials %s %s %s %s %s>' % (self.domain, self.username, self.plainpassword, self.cipherpassword.encode('hex'), self.iv.encode('hex'))

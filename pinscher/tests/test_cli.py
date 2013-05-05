@@ -1,250 +1,229 @@
 from tempdir import TempDir
 import unittest
 import os
-import sqlite3
-import hashlib
 
-import pinscher.exceptions
+from utilities import not_raises
+
 import pinscher.cli
+from pinscher.Keyfile import Keyfile
+from pinscher.Database import Database
 
 
 class TestCli(unittest.TestCase):
 
-    def test_parse_path_with_hyphen(self):
-        args = pinscher.cli.parse('init --keyfile-path here-to-here.keyfile --database-path -here-it-is.db --generate'.split(' '))
-        self.assertEquals('here-to-here.keyfile', args['keyfile-path'])
-        self.assertEquals('-here-it-is.db', args['database-path'])
+    key = '0b660492d98c54412d3d91818de5a2ae0b3110850a12010768b80fb277f55aa6'.decode('hex')
+    iv = '9059d464b93397a2a98e8e1f00b596c6'.decode('hex')
+    length = 5
+    characters = 'abc'
+    domain = 'domain'
+    username = 'username'
+    password = 'password'
+    pin = '1234'
 
-    def test_parse_mode(self):
-        args = pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate'.split(' '))
-        assert args['mode'] == 'init'
+    def setUp(self):
+        self.d = TempDir()
+        self.k = os.path.join(self.d.name, 'keyfile')
+        d = os.path.join(self.d.name, 'database')
+        pinscher.cli.main(('init %s %s' % (self.k, d)).split(' '))
+        self.keyfile = Keyfile.load(self.k)
 
-    def test_validate_unknown_mode(self):
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('mode --keyfile-path here.keyfile --database-path here.db --generate'.split(' ')))
+    def tearDown(self):
+        self.d.dissolve()
 
-    def test_validate_unknown_arg(self):
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --unknown huh --keyfile-path here.keyfile --database-path here.db --generate'.split(' ')))
-
-    def test_validate_missing_value(self):
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate --characters'.split(' ')))
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --characters --generate'.split(' ')))
-
-    def test_validate_invalid_arg(self):
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate --length 0'.split(' ')))
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate --length -5'.split(' ')))
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate --length a'.split(' ')))
-
-    def test_init_no_keyfile_path(self):
-        self.assertRaises(pinscher.exceptions.MissingArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --database-path here.db --generate'.split(' ')))
-
-    def test_init_no_database_path(self):
-        self.assertRaises(pinscher.exceptions.MissingArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --generate'.split(' ')))
-
-    def test_init_no_key_or_generate(self):
-        self.assertRaises(pinscher.exceptions.MissingArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db'.split(' ')))
-
-    def test_init_both_key_and_generate(self):
-        self.assertRaises(pinscher.exceptions.InvalidArgument,
-                          pinscher.cli.validate,
-                          pinscher.cli.parse('init --keyfile-path here.keyfile --database-path here.db --generate --key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa --iv bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'.split(' ')))
-
-    def test_generate_key_valid(self):
-        key, iv = pinscher.cli.generate_key()
-        self.assertTrue(pinscher.cli.args_defaults['init']['key']['valid'](key))
-        self.assertTrue(pinscher.cli.args_defaults['init']['iv']['valid'](iv))
-
-    def test_init_generate_if_no_key(self):
-        self.generated = False
-
-        def g():
-            self.generated = True
-            return 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-        pinscher.cli.generate_key = g
+    @not_raises(AttributeError)
+    def test_init_defaults(self):
         with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            args = 'init --keyfile-path %s --database-path %s --generate' % (keyfile, database,)
-            pinscher.cli.main(args.split(' '))
-            self.assertTrue(self.generated)
+            k = os.path.join(d.name, 'keyfile')
+            d = os.path.join(d.name, 'database')
+            pinscher.cli.main(('init %s %s' % (k, d)).split(' '))
+            keyfile = Keyfile.load(k)
+            self.assertEqual(k, keyfile.path)
+            self.assertEqual(d, keyfile.database_path)
+            self.assertEqual(Keyfile.LENGTH, keyfile.length)
+            self.assertEqual(Keyfile.CHARACTERS, keyfile.characters)
+            keyfile.key
+            keyfile.iv
 
-    def test_init_dont_generate_if_key(self):
-        self.generated = False
-
-        def g():
-            self.generated = True
-            return 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-        pinscher.cli.generate_key = g
+    def test_init_override(self):
         with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            args = 'init --keyfile-path %s --database-path %s --key cccccccccccccccccccccccccccccccc --iv bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' % (keyfile, database,)
-            pinscher.cli.main(args.split(' '))
-            self.assertFalse(self.generated)
+            k = os.path.join(d.name, 'keyfile')
+            d = os.path.join(d.name, 'database')
+            pinscher.cli.main(('init %s %s --key %s --iv %s --length %d --characters %s' % (k, d, self.key, self.iv, self.length, self.characters)).split(' '))
+            keyfile = Keyfile.load(k)
+            self.assertEqual(k, keyfile.path)
+            self.assertEqual(d, keyfile.database_path)
+            self.assertEqual(self.length, keyfile.length)
+            self.assertEqual(self.characters, keyfile.characters)
+            self.assertEqual(self.key, keyfile.key)
+            self.assertEqual(self.iv, keyfile.iv)
 
-    def test_generate_key_not_identical(self):
-        self.assertNotEqual(pinscher.cli.generate_key(), pinscher.cli.generate_key())
+    def test_add_defaults(self):
+        results = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        with Database(self.keyfile) as d:
+            c = d.find(domain=self.domain, username=self.username)[0]
+        c.unlock(self.pin)
+        self.assertEqual(results, '\n'.join([c.domain, c.username, c.plainpassword]))
 
-    def test_init_saves_keyfile(self):
-        with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            key = 'cccccccccccccccccccccccccccccccc'
-            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-            length = '5'
-            characters = 'abc'
-            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s --length %s --characters %s' % (keyfile, database, key, iv, length, characters)
-            pinscher.cli.main(args.split(' '))
-            with open(keyfile, 'r') as f:
-                contents = f.read().splitlines()
-                self.assertEqual(database, contents[0])
-                self.assertEqual(key, contents[1])
-                self.assertEqual(iv, contents[2])
-                self.assertEqual(length, contents[3])
-                self.assertEqual(characters, contents[4])
+    def test_add_override(self):
+        results = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --length %d --characters %s'
+                % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
+        parts = results.split('\n')
+        self.assertEqual(self.length, len(parts[2]))
+        for c in parts[2]:
+            self.assertIn(c, self.characters)
 
-    def test_encrypt(self):
-        key = 'cccccccccccccccccccccccccccccccc'
-        iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-        plaintext = 'test'
-        ciphertext = pinscher.cli.encrypt(key, iv, plaintext)
-        self.assertEqual(plaintext, pinscher.cli.decrypt(key, iv, ciphertext))
+    def test_add_provide_password(self):
+        results = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        parts = results.split('\n')
+        self.assertEqual(self.password, parts[2])
 
-    def test_init_database_from_schema(self):
-        db = pinscher.cli.init_database()
-        cursor = db.cursor()
-        results = cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
-        self.assertIn(('Credentials',), results)
-        cursor.execute('SELECT * FROM Credentials')
-        cursor.fetchone()
-        columns = [d[0] for d in cursor.description]
-        for c in ['domain', 'username', 'password', 'iv']:
-            self.assertIn(c, columns)
-        cursor.close()
+    def test_find_single_keyfile_single_result(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
-    def test_init_saves_database(self):
-        with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            key = 'cccccccccccccccccccccccccccccccc'
-            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-            length = '5'
-            characters = 'abc'
-            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s --length %s --characters %s' % (keyfile, database, key, iv, length, characters)
-            pinscher.cli.main(args.split(' '))
-            with open(database, 'r') as f:
-                ciphersql = f.read()
-                sql = pinscher.cli.decrypt(key, iv, ciphersql)
-                connection = sqlite3.connect(':memory:')
-                cursor = connection.cursor()
-                cursor.executescript(sql)
-                results = cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
-                self.assertIn(('Credentials',), results)
-                cursor.execute('SELECT * FROM Credentials')
-                cursor.fetchone()
-                columns = [desc[0] for desc in cursor.description]
-                for c in ['domain', 'username', 'password', 'iv']:
-                    self.assertIn(c, columns)
-                cursor.close()
+    def test_find_single_keyfile_multiple_results(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain + '2', self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, '', self.domain + '2', self.username]))
 
-    def test_load_keyfile(self):
-        with TempDir() as d:
-            details = {'keyfile-path': os.path.join(d.name, 'test.keyfile'),
-                       'database-path': os.path.join(d.name, 'test.database'),
-                       'key': 'cccccccccccccccccccccccccccccccc',
-                       'iv': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-                       'length': 5,
-                       'characters': 'abc'
-                       }
-            pinscher.cli.save_keyfile(details)
-            self.assertEqual(details, pinscher.cli.load_keyfile(details['keyfile-path']))
+    def test_find_multiple_keyfiles_single_result(self):
+        k2 = os.path.join(self.d.name, 'keyfile2')
+        d2 = os.path.join(self.d.name, 'database2')
+        pinscher.cli.main(('init %s %s' % (k2, d2)).split(' '))
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s %s --domain %s --username %s --pin %s'
+                % (self.k, k2, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
-    def test_add_works(self):
-        with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            key = 'cccccccccccccccccccccccccccccccc'
-            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s' % (keyfile, database, key, iv,)
-            pinscher.cli.main(args.split(' '))
-            domain = 'domain'
-            username = 'username'
-            password = 'password'
-            pin = '1234'
-            args = 'add  --keyfile-path %s --domain %s --username %s --password %s --pin %s' % (keyfile, domain, username, password, pin)
-            pinscher.cli.main(args.split(' '))
-            with open(database, 'r') as f:
-                ciphersql = f.read()
-                sql = pinscher.cli.decrypt(key, iv, ciphersql)
-                connection = sqlite3.connect(':memory:')
-                cursor = connection.cursor()
-                cursor.executescript(sql)
-                cursor.execute('SELECT domain, username, password, iv FROM Credentials')
-                row = cursor.fetchone()
-                self.assertEqual(domain, row[0])
-                self.assertEqual(username, row[1])
-                self.assertEqual(password, pinscher.cli.decrypt(hashlib.sha256(domain + username + pin).digest().encode('hex'), row[3], row[2]))
-                cursor.close()
+    def test_find_multiple_keyfiles_multiple_results(self):
+        k2 = os.path.join(self.d.name, 'keyfile2')
+        d2 = os.path.join(self.d.name, 'database2')
+        pinscher.cli.main(('init %s %s' % (k2, d2)).split(' '))
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (k2, self.domain + '2', self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s %s --domain %s --username %s --pin %s'
+                % (self.k, k2, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, '', self.domain + '2', self.username]))
 
-    def test_add_generate_password(self):
-        password = pinscher.cli.generate_password(5, 'abc')
-        self.assertEqual(5, len(password))
-        self.assertTrue(False not in [(c in 'abc') for c in password])
+    def test_find_single_result_no_pin(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s'
+                % (self.k, self.domain, self.username)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, '********']))
 
-    def test_load_database(self):
-        with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            args = 'init --keyfile-path %s --database-path %s --generate' % (keyfile, database,)
-            pinscher.cli.main(args.split(' '))
-            k = pinscher.cli.load_keyfile(keyfile)
-            db = pinscher.cli.load_database(k)
-            cursor = db.cursor()
-            results = cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"')
-            self.assertIn(('Credentials',), results)
-            cursor.execute('SELECT * FROM Credentials')
-            cursor.fetchone()
-            columns = [desc[0] for desc in cursor.description]
-            for c in ['domain', 'username', 'password', 'iv']:
-                self.assertIn(c, columns)
-            cursor.close()
+    def test_find_fuzzy_match(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain[0:2], self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
-    def test_find_works(self):
-        with TempDir() as d:
-            keyfile = os.path.join(d.name, 'test.keyfile')
-            database = os.path.join(d.name, 'test.database')
-            key = 'cccccccccccccccccccccccccccccccc'
-            iv = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-            args = 'init --keyfile-path %s --database-path %s --key %s --iv %s' % (keyfile, database, key, iv,)
-            pinscher.cli.main(args.split(' '))
-            domain = 'domain'
-            username = 'username'
-            password = 'password'
-            pin = '1234'
-            args = 'add  --keyfile-path %s --domain %s --username %s --password %s --pin %s' % (keyfile, domain, username, password, pin)
-            pinscher.cli.main(args.split(' '))
-            domain = 'dom'
-            username = 'user'
-            pin = '1234'
-            args = 'find  --keyfile-path %s --domain %s --username %s --pin %s' % (keyfile, domain, username, pin)
-            result = pinscher.cli.main(args.split(' '))
-            self.assertEqual(result, password)
+    def test_find_only_domain(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --pin %s'
+                % (self.k, self.domain, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
+
+    def test_find_only_username(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --username %s --pin %s'
+                % (self.k, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
+
+    def test_update_defaults(self):
+        results1 = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        results2 = pinscher.cli.main(
+            ('update %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        with Database(self.keyfile) as d:
+            c = d.find(domain=self.domain, username=self.username)[0]
+        c.unlock(self.pin)
+        print c
+        self.assertEqual(results2, '\n'.join([c.domain, c.username, c.plainpassword]))
+        self.assertNotEqual(results1, results2)
+
+    def test_update_override(self):
+        results1 = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --length %d --characters %s'
+                % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
+        results2 = pinscher.cli.main(
+            ('update %s --domain %s --username %s --pin %s --length %d --characters %s'
+                % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
+        parts = results2.split('\n')
+        self.assertEqual(self.length, len(parts[2]))
+        for c in parts[2]:
+            self.assertIn(c, self.characters)
+        self.assertNotEqual(results1, results2)
+
+    def test_update_provide_password(self):
+        results1 = pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        results2 = pinscher.cli.main(
+            ('update %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password + '2')).split(' '))
+        parts = results2.split('\n')
+        self.assertEqual(self.password + '2', parts[2])
+        self.assertNotEqual(results1, results2)
+
+    def test_delete(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        pinscher.cli.main(
+            ('delete %s --domain %s --username %s'
+                % (self.k, self.domain, self.username)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '')
+
+    def test_delete_not_fuzzy(self):
+        pinscher.cli.main(
+            ('add %s --domain %s --username %s --pin %s --password %s'
+                % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
+        pinscher.cli.main(
+            ('delete %s --domain %s --username %s'
+                % (self.k, self.domain[0:2], self.username)).split(' '))
+        results = pinscher.cli.main(
+            ('find %s --domain %s --username %s --pin %s'
+                % (self.k, self.domain, self.username, self.pin)).split(' '))
+        self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))

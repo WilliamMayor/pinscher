@@ -182,11 +182,9 @@ class TestDatabase(unittest.TestCase):
 
     def test_update(self):
         c1 = C('domain', 'u', plainpassword='p')
+        c2 = C('domain', 'u', plainpassword='q')
         with D(self.keyfile) as d:
             d.add(c1, self.pin)
-            c2 = d.find(domain='domain')[0]
-            c2.plainpassword = 'q'
-            c2.cipherpassword = None
             d.update(c2, self.pin)
             c3 = d.find(domain='domain')[0]
             self.assertEqual(c2.plainpassword, c3.unlock(self.pin))

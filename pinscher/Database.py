@@ -73,11 +73,12 @@ class Database:
         cipherpassword, iv = credentials.lock(pin)
         query = ''.join([
             'UPDATE Credentials ',
-            'SET password=?',
+            'SET password=?, iv=? ',
             'WHERE domain=? ',
             'AND username=?'])
         args = [
             cipherpassword.encode('hex'),
+            iv.encode('hex'),
             credentials.domain,
             credentials.username]
         self.__execute__(query, args)
