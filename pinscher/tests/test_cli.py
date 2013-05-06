@@ -4,7 +4,7 @@ import os
 
 from utilities import not_raises
 
-import pinscher.cli
+import pinscher.scripts.cli as cli
 from pinscher.Keyfile import Keyfile
 from pinscher.Database import Database
 
@@ -24,7 +24,7 @@ class TestCli(unittest.TestCase):
         self.d = TempDir()
         self.k = os.path.join(self.d.name, 'keyfile')
         d = os.path.join(self.d.name, 'database')
-        pinscher.cli.main(('init %s %s' % (self.k, d)).split(' '))
+        cli.main(('init %s %s' % (self.k, d)).split(' '))
         self.keyfile = Keyfile.load(self.k)
 
     def tearDown(self):
@@ -35,7 +35,7 @@ class TestCli(unittest.TestCase):
         with TempDir() as d:
             k = os.path.join(d.name, 'keyfile')
             d = os.path.join(d.name, 'database')
-            pinscher.cli.main(('init %s %s' % (k, d)).split(' '))
+            cli.main(('init %s %s' % (k, d)).split(' '))
             keyfile = Keyfile.load(k)
             self.assertEqual(k, keyfile.path)
             self.assertEqual(d, keyfile.database_path)
@@ -48,7 +48,7 @@ class TestCli(unittest.TestCase):
         with TempDir() as d:
             k = os.path.join(d.name, 'keyfile')
             d = os.path.join(d.name, 'database')
-            pinscher.cli.main(('init %s %s --key %s --iv %s --length %d --characters %s' % (k, d, self.key, self.iv, self.length, self.characters)).split(' '))
+            cli.main(('init %s %s --key %s --iv %s --length %d --characters %s' % (k, d, self.key, self.iv, self.length, self.characters)).split(' '))
             keyfile = Keyfile.load(k)
             self.assertEqual(k, keyfile.path)
             self.assertEqual(d, keyfile.database_path)
@@ -58,7 +58,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(self.iv, keyfile.iv)
 
     def test_add_defaults(self):
-        results = pinscher.cli.main(
+        results = cli.main(
             ('add %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         with Database(self.keyfile) as d:
@@ -67,7 +67,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(results, '\n'.join([c.domain, c.username, c.plainpassword]))
 
     def test_add_override(self):
-        results = pinscher.cli.main(
+        results = cli.main(
             ('add %s --domain %s --username %s --pin %s --length %d --characters %s'
                 % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
         parts = results.split('\n')
@@ -76,29 +76,29 @@ class TestCli(unittest.TestCase):
             self.assertIn(c, self.characters)
 
     def test_add_provide_password(self):
-        results = pinscher.cli.main(
+        results = cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
         parts = results.split('\n')
         self.assertEqual(self.password, parts[2])
 
     def test_find_single_keyfile_single_result(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
     def test_find_single_keyfile_multiple_results(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain + '2', self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, '', self.domain + '2', self.username]))
@@ -106,11 +106,11 @@ class TestCli(unittest.TestCase):
     def test_find_multiple_keyfiles_single_result(self):
         k2 = os.path.join(self.d.name, 'keyfile2')
         d2 = os.path.join(self.d.name, 'database2')
-        pinscher.cli.main(('init %s %s' % (k2, d2)).split(' '))
-        pinscher.cli.main(
+        cli.main(('init %s %s' % (k2, d2)).split(' '))
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s %s --domain %s --username %s --pin %s'
                 % (self.k, k2, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
@@ -118,59 +118,59 @@ class TestCli(unittest.TestCase):
     def test_find_multiple_keyfiles_multiple_results(self):
         k2 = os.path.join(self.d.name, 'keyfile2')
         d2 = os.path.join(self.d.name, 'database2')
-        pinscher.cli.main(('init %s %s' % (k2, d2)).split(' '))
-        pinscher.cli.main(
+        cli.main(('init %s %s' % (k2, d2)).split(' '))
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (k2, self.domain + '2', self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s %s --domain %s --username %s --pin %s'
                 % (self.k, k2, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, '', self.domain + '2', self.username]))
 
     def test_find_single_result_no_pin(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s'
                 % (self.k, self.domain, self.username)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, '********']))
 
     def test_find_fuzzy_match(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain[0:2], self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
     def test_find_only_domain(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --pin %s'
                 % (self.k, self.domain, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
     def test_find_only_username(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --username %s --pin %s'
                 % (self.k, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))
 
     def test_update_defaults(self):
-        results1 = pinscher.cli.main(
+        results1 = cli.main(
             ('add %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
-        results2 = pinscher.cli.main(
+        results2 = cli.main(
             ('update %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         with Database(self.keyfile) as d:
@@ -181,10 +181,10 @@ class TestCli(unittest.TestCase):
         self.assertNotEqual(results1, results2)
 
     def test_update_override(self):
-        results1 = pinscher.cli.main(
+        results1 = cli.main(
             ('add %s --domain %s --username %s --pin %s --length %d --characters %s'
                 % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
-        results2 = pinscher.cli.main(
+        results2 = cli.main(
             ('update %s --domain %s --username %s --pin %s --length %d --characters %s'
                 % (self.k, self.domain, self.username, self.pin, self.length, self.characters)).split(' '))
         parts = results2.split('\n')
@@ -194,10 +194,10 @@ class TestCli(unittest.TestCase):
         self.assertNotEqual(results1, results2)
 
     def test_update_provide_password(self):
-        results1 = pinscher.cli.main(
+        results1 = cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        results2 = pinscher.cli.main(
+        results2 = cli.main(
             ('update %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password + '2')).split(' '))
         parts = results2.split('\n')
@@ -205,25 +205,25 @@ class TestCli(unittest.TestCase):
         self.assertNotEqual(results1, results2)
 
     def test_delete(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        pinscher.cli.main(
+        cli.main(
             ('delete %s --domain %s --username %s'
                 % (self.k, self.domain, self.username)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '')
 
     def test_delete_not_fuzzy(self):
-        pinscher.cli.main(
+        cli.main(
             ('add %s --domain %s --username %s --pin %s --password %s'
                 % (self.k, self.domain, self.username, self.pin, self.password)).split(' '))
-        pinscher.cli.main(
+        cli.main(
             ('delete %s --domain %s --username %s'
                 % (self.k, self.domain[0:2], self.username)).split(' '))
-        results = pinscher.cli.main(
+        results = cli.main(
             ('find %s --domain %s --username %s --pin %s'
                 % (self.k, self.domain, self.username, self.pin)).split(' '))
         self.assertEqual(results, '\n'.join([self.domain, self.username, self.password]))

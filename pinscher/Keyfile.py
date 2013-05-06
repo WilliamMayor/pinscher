@@ -1,5 +1,6 @@
 import string
 import pickle
+import os
 
 import utilities
 
@@ -35,5 +36,15 @@ class Keyfile:
     def __setstate__(self, _dict):
         self.__dict__.update(_dict)
 
+    def __hash__(self):
+        return self.path.__hash__()
+
+    def __eq__(self, other):
+        return self.path == other.path
+
     def save(self):
         pickle.dump(self, open(self.path, 'wb'))
+
+    def delete(self):
+        os.remove(self.path)
+        os.remove(self.database_path)

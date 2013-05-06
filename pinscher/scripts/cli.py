@@ -28,10 +28,10 @@ import re
 
 import docopt
 
-import utilities
-from Keyfile import Keyfile
-from Database import Database
-from Credentials import Credentials
+import pinscher.utilities as utilities
+from pinscher.Keyfile import Keyfile
+from pinscher.Database import Database
+from pinscher.Credentials import Credentials
 
 
 def sanitise(args):
