@@ -14,7 +14,7 @@ class Keyfile:
     def create(path, database_path, **kwargs):
         k = Keyfile()
         k.path = path
-        k.database_path = database_path
+        k.database_path = os.path.abspath(database_path)
         k.key = kwargs.get('key', utilities.generate_key())
         k.iv = kwargs.get('iv', utilities.generate_iv())
         k.length = kwargs.get('length', Keyfile.LENGTH)
