@@ -43,7 +43,8 @@ class Keyfile:
         return self.path == other.path
 
     def save(self):
-        pickle.dump(self, open(self.path, 'wb'))
+        with open(self.path, 'wb') as o:
+            pickle.dump(self, o)
 
     def delete(self):
         os.remove(self.path)

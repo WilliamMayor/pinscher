@@ -11,6 +11,7 @@ from .utilities import raises
 from pinscher.Keyfile import Keyfile as K
 from pinscher.Database import Database as D
 from pinscher.Credentials import Credentials as C
+import pinscher.Database
 
 
 class TestDatabase(unittest.TestCase):
@@ -24,6 +25,7 @@ class TestDatabase(unittest.TestCase):
     iv = 'a3206f4194d1d7a252a9fe24b7b063b9'.decode('hex')
 
     def setUp(self):
+        pinscher.Database.Timeout.WAIT = 1
         self.d = TempDir()
         self.keyfile_path = os.path.join(self.d.name, 'keyfile')
         self.database_path = os.path.join(self.d.name, 'database')

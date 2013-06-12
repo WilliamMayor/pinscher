@@ -1,113 +1,54 @@
-import sqlite3
-import os
+import socket
 
-from pkg_resources import resource_string
-
-import utilities
-from .Credentials import Credentials
+from Server import Server
 
 
 class Database:
 
     @staticmethod
     def create(keyfile):
-        connection = sqlite3.connect(':memory:')
-        schema = resource_string(__name__, 'schema.sql')
-        connection.executescript(schema)
-        if os.path.isfile(keyfile.database_path):
-            raise IOError('Database file already exsits')
-        with open(keyfile.database_path, 'wb') as f:
-            f.write(
-                utilities.encrypt(
-                    keyfile.key,
-                    keyfile.iv,
-                    '\n'.join(connection.iterdump())))
+        Server.db_create(keyfile)
 
     def __init__(self, keyfile):
         self.keyfile = keyfile
-        self.connection = sqlite3.connect(':memory:')
-        with open(self.keyfile.database_path, 'rb') as f:
-            try:
-                self.connection.executescript(
-                    utilities.decrypt(
-                        self.keyfile.key,
-                        self.keyfile.iv, f.read()))
-            except sqlite3.OperationalError:
-                raise ValueError('Could not decrypt database')
 
     def __enter__(self):
+        self.c = Server.connect(self.keyfile)
         return self
 
     def __exit__(self, type, value, traceback):
-        self.close()
-
-    def close(self):
-        with open(self.keyfile.database_path, 'wb') as f:
-            f.write(
-                utilities.encrypt(
-                    self.keyfile.key,
-                    self.keyfile.iv,
-                    '\n'.join(self.connection.iterdump())))
-        self.connection.close()
-
-    def __execute__(self, query, args):
-        cursor = self.connection.cursor()
-        results = list(cursor.execute(query, args))
-        cursor.close()
-        return results
+        self.c.shutdown(socket.SHUT_RDWR)
+        self.c.close()
 
     def add(self, credentials, pin):
-        cipherpassword, iv = credentials.lock(pin)
-        query = ''.join([
-            'INSERT INTO ',
-            'Credentials(domain, username, password, iv) ',
-            'VALUES(?,?,?,?)'])
-        args = [
-            credentials.domain,
-            credentials.username,
-            cipherpassword.encode('hex'),
-            iv.encode('hex')]
-        self.__execute__(query, args)
+        self.c.sendall(Server.prepare_message('add', credentials=credentials, pin=pin))
+        action, result = Server.receive_message(self.c)
+        return result['result']
 
     def update(self, credentials, pin):
-        cipherpassword, iv = credentials.lock(pin)
-        query = ''.join([
-            'UPDATE Credentials ',
-            'SET password=?, iv=? ',
-            'WHERE domain=? ',
-            'AND username=?'])
-        args = [
-            cipherpassword.encode('hex'),
-            iv.encode('hex'),
-            credentials.domain,
-            credentials.username]
-        self.__execute__(query, args)
+        self.c.sendall(Server.prepare_message('update', credentials=credentials, pin=pin))
+        action, result = Server.receive_message(self.c)
+        return result['result']
 
     def find(self, domain='', username=''):
-        query = ''.join([
-            'SELECT domain, username, password, iv ',
-            'FROM Credentials ',
-            'WHERE domain LIKE ("%" || ? || "%") ',
-            'AND username LIKE ("%" || ? || "%")'])
-        args = [
-            domain,
-            username]
-        rows = self.__execute__(query, args)
-        results = map(
-            lambda row: Credentials(
-                domain=row[0],
-                username=row[1],
-                cipherpassword=row[2].decode('hex'),
-                iv=row[3].decode('hex')),
-            rows)
-        return results
+        self.c.sendall(Server.prepare_message('find', domain=domain, username=username))
+        action, result = Server.receive_message(self.c)
+        return result['result']
 
     def delete(self, credentials):
-        query = ''.join([
-            'DELETE FROM Credentials ',
-            'WHERE domain=? ',
-            'AND username=?'])
-        args = [
-            credentials.domain,
-            credentials.username]
-        self.__execute__(query, args)
+        self.c.sendall(Server.prepare_message('delete', credentials=credentials))
+        action, result = Server.receive_message(self.c)
+        return result['result']
+
+if __name__ == '__main__':
+    from Keyfile import Keyfile
+    from Credentials import Credentials
+    k = Keyfile.load('/Users/william/Desktop/test.kf')
+    with Database(k) as d:
+        d.add(Credentials('domain1', 'username1', plainpassword='password1'), 1234)
+        d.add(Credentials('domain2', 'username2', plainpassword='password2'), 1234)
+        d.update(Credentials('domain2', 'username2', plainpassword='better password'), 1234)
+    with Database(k) as d:
+        print d.find(domain='d')
+        d.delete(Credentials('domain1', 'username1'))
+        d.delete(Credentials('domain2', 'username2'))
