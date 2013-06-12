@@ -1,10 +1,21 @@
 import sqlite3
 import os
 
-from pkg_resources import resource_string
-
 import utilities
 from .Credentials import Credentials
+
+SCHEMA = """BEGIN TRANSACTION;
+CREATE TABLE Credentials(
+    domain TEXT,
+    username TEXT,
+    password TEXT,
+    iv TEXT,
+    PRIMARY KEY (domain, username)
+);
+CREATE INDEX credentials_domain_index ON Credentials(domain);
+CREATE INDEX credentials_username_index ON Credentials(username);
+COMMIT;
+"""
 
 
 class Database:
@@ -12,8 +23,7 @@ class Database:
     @staticmethod
     def create(keyfile):
         connection = sqlite3.connect(':memory:')
-        schema = resource_string(__name__, 'schema.sql')
-        connection.executescript(schema)
+        connection.executescript(SCHEMA)
         if os.path.isfile(keyfile.database_path):
             raise IOError('Database file already exsits')
         with open(keyfile.database_path, 'wb') as f:
