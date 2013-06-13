@@ -1,12 +1,14 @@
 from cx_Freeze import setup, Executable
 
 executables = [
-    Executable("pinscher/scripts/cli.py")
+    Executable("pinscher/scripts/cli.py"),
+    Executable("pinscher/scripts/alfred/filter.py"),
+    Executable("pinscher/scripts/alfred/action.py"),
 ]
 
 buildOptions = dict(
     compressed=True,
-    packages=['Crypto', 'sqlite3']
+    packages=['Crypto', 'sqlite3', 'alp']
 )
 
 setup(
