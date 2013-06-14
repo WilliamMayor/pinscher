@@ -89,8 +89,6 @@ def run_find(args):
     if len(results) == 1:
         if 'pin' in args:
             results[0].unlock(int(args['pin']))
-        else:
-            results[0].plainpassword = '********'
     return pretty_credentials(results)
 
 

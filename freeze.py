@@ -1,7 +1,7 @@
 from cx_Freeze import setup, Executable
 
 executables = [
-    Executable("pinscher/scripts/cli.py"),
+    Executable("pinscher/scripts/pinscher.py"),
     Executable("pinscher/scripts/alfred/filter.py"),
     Executable("pinscher/scripts/alfred/action.py"),
 ]

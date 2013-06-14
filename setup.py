@@ -13,7 +13,7 @@ setup(
     packages=['pinscher', ],
     entry_points={
         'console_scripts': [
-            'pinscher = pinscher.scripts.cli:script_entry_point'
+            'pinscher = pinscher.scripts.pinscher:script_entry_point'
         ],
         'gui_scripts': []
     }
