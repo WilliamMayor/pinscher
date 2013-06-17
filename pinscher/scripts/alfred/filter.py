@@ -1,5 +1,3 @@
-import os
-
 import alp
 from alp.item import Item as I
 from alp.settings import Settings
@@ -146,6 +144,12 @@ def query_three(query):
             arg='delete %s %s %s' % (k.path, query[0], query[1]),
             valid=True
         ))
+        items.append(I(
+            title='Quicklook a QR code password for %s:%s from %s' % (query[1], query[0], k.name),
+            subtitle='Display QR code',
+            arg='qr %s %s %s %s ' % (k.path, query[0], query[1], query[2]),
+            valid=True
+        ))
     if not exact_c:
         for k in keyfiles:
             items.append(I(
@@ -172,6 +176,12 @@ def query_three(query):
                 title='Delete account %s:%s in %s' % (c.username, c.domain, k.name),
                 subtitle='Remove this username and password',
                 arg='delete %s %s %s' % (k.path, c.domain, c.username),
+                valid=True
+            ))
+            items.append(I(
+                title='Quicklook a QR code password for %s:%s from %s' % (c.username, c.domain, k.name),
+                subtitle='Display QR code',
+                arg='qr %s %s %s %s ' % (k.path, c.domain, c.username, query[2]),
                 valid=True
             ))
     if exact_k is None:

@@ -8,7 +8,7 @@ executables = [
 
 buildOptions = dict(
     compressed=True,
-    packages=['Crypto', 'sqlite3', 'alp']
+    packages=['Crypto', 'sqlite3', 'alp', 'qrcode', 'tempfile', 'PIL']
 )
 
 setup(

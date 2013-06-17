@@ -1,5 +1,8 @@
 import subprocess
+import tempfile
+import os
 
+import qrcode
 import alp
 from alp.settings import Settings
 
@@ -48,6 +51,27 @@ def copy(keyfile_path, domain, username, pin):
         notify('Copied!', 'Password copied to clipboard')
     except:
         notify('Error', 'Could not copy password')
+
+
+def qr(keyfile_path, domain, username, pin):
+    try:
+        k = Keyfile.load(keyfile_path)
+        with Database(k) as d:
+            results = d.find(domain=domain, username=username)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=10,
+        )
+        qr.add_data(results[0].unlock(pin))
+        qr.make(fit=True)
+
+        img = qr.make_image()
+        with tempfile.TemporaryFile('w') as f:
+            img.save(os.path.abspath(f.name))
+            subprocess.Popen(['qlmanage', '-p', os.path.abspath(f.name)], stdout=open('/dev/null', 'w'))
+    except:
+        notify('Error', 'Could not QR password')
 
 
 def update(keyfile_path, domain, username, pin, password=None, length=None, characters=None):
@@ -104,7 +128,8 @@ actions = {
     'copy': copy,
     'update': update,
     'delete': delete,
-    'add': add
+    'add': add,
+    'qr': qr
 }
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import os
 
 from utilities import not_raises
 
-import pinscher.scripts.cli as cli
+import pinscher.scripts.pinscher as cli
 from pinscher.Keyfile import Keyfile
 from pinscher.Database import Database
 
