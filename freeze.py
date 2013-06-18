@@ -1,5 +1,7 @@
 from cx_Freeze import setup, Executable
 
+icons = ['edit', 'lock', 'qrcode', 'search', 'trash', 'user', 'copy', 'save', 'plus']
+
 executables = [
     Executable("pinscher/scripts/pinscher.py"),
     Executable("pinscher/scripts/alfred/filter.py"),
@@ -8,7 +10,8 @@ executables = [
 
 buildOptions = dict(
     compressed=True,
-    packages=['Crypto', 'sqlite3', 'alp', 'qrcode', 'tempfile', 'PIL']
+    packages=['Crypto', 'sqlite3', 'alp', 'qrcode', 'tempfile', 'PIL'],
+    include_files=['resources/%s.png' % i for i in icons]
 )
 
 setup(

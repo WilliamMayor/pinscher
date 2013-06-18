@@ -1,3 +1,6 @@
+import os
+import sys
+
 import alp
 from alp.item import Item as I
 from alp.settings import Settings
@@ -49,6 +52,10 @@ def load_keyfiles():
     return keyfiles
 
 
+def icon_path(name):
+    return os.path.join(os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())), 'resources', '%s.png' % name)
+
+
 def query_one(query):
     """keyfile|domain|username"""
     items = []
@@ -61,12 +68,14 @@ def query_one(query):
                 title='%s:%s' % (c.username, c.domain),
                 subtitle='Use this account (need PIN)',
                 autocomplete='%s %s ' % (c.domain, c.username),
+                icon=icon_path('user'),
                 valid=False
             ))
     items.append(I(
         title='New account %s' % (query[0]),
         subtitle='Add new account (need username)',
         autocomplete='%s ' % (query[0]),
+        icon=icon_path('plus'),
         valid=False
     ))
     if exact_k is None:
@@ -74,6 +83,7 @@ def query_one(query):
             title='Create new keyfile: %s' % query[0],
             subtitle='Create a new keyfile',
             arg='create %s' % query[0],
+            icon=icon_path('plus'),
             valid=True
         ))
     return items
@@ -91,6 +101,7 @@ def query_two(query):
                 title='%s:%s' % (c.username, c.domain),
                 subtitle='Use this account (need PIN)',
                 autocomplete='%s %s ' % (c.domain, c.username),
+                icon=icon_path('lock'),
                 valid=False
             ))
     if not exact_c:
@@ -98,6 +109,7 @@ def query_two(query):
             title='Create new account %s:%s' % (query[1], query[0]),
             subtitle='Create new account (need PIN)',
             autocomplete='%s %s ' % (query[0], query[1]),
+            icon=icon_path('plus'),
             valid=False
         ))
     for k in exact_c:
@@ -106,6 +118,7 @@ def query_two(query):
             title='%s:%s' % (c.username, c.domain),
             subtitle='Use this account (need PIN)',
             autocomplete='%s %s ' % (c.domain, c.username),
+            icon=icon_path('lock'),
             valid=False
         ))
     if exact_k is None:
@@ -113,6 +126,7 @@ def query_two(query):
             title='Create new keyfile: %s' % query[0],
             subtitle='Save keyfile here: %s' % query[1],
             arg='create %s %s' % (query[0], query[1]),
+            icon=icon_path('plus'),
             valid=True
         ))
     return items
@@ -130,24 +144,28 @@ def query_three(query):
             title='Copy password %s:%s from %s' % (query[1], query[0], k.name),
             subtitle='Copy to clipboard',
             arg='copy %s %s %s %s ' % (k.path, query[0], query[1], query[2]),
+            icon=icon_path('copy'),
             valid=True
         ))
         items.append(I(
             title='Update account %s:%s in %s' % (query[1], query[0], k.name),
             subtitle='Randomly generate a new password',
             arg='update %s %s %s %s ' % (k.path, query[0], query[1], query[2]),
+            icon=icon_path('edit'),
             valid=True
         ))
         items.append(I(
             title='Delete account %s:%s in %s' % (query[1], query[0], k.name),
             subtitle='Remove this username and password',
             arg='delete %s %s %s' % (k.path, query[0], query[1]),
+            icon=icon_path('trash'),
             valid=True
         ))
         items.append(I(
             title='Quicklook a QR code password for %s:%s from %s' % (query[1], query[0], k.name),
             subtitle='Display QR code',
             arg='qr %s %s %s %s ' % (k.path, query[0], query[1], query[2]),
+            icon=icon_path('qrcode'),
             valid=True
         ))
     if not exact_c:
@@ -156,6 +174,7 @@ def query_three(query):
                 title='Save new account %s:%s in %s' % (query[1], query[0], k.name),
                 subtitle='Randomly generate a password',
                 arg='add %s %s %s %s ' % (k.path, query[0], query[1], query[2]),
+                icon=icon_path('plus'),
                 valid=True
             ))
     for k in match_c:
@@ -164,24 +183,28 @@ def query_three(query):
                 title='Copy password %s:%s from %s' % (c.username, c.domain, k.name),
                 subtitle='Copy to clipboard',
                 arg='copy %s %s %s %s ' % (k.path, c.domain, c.username, query[2]),
+                icon=icon_path('copy'),
                 valid=True
             ))
             items.append(I(
                 title='Update account %s:%s in %s' % (c.username, c.domain, k.name),
                 subtitle='Randomly generate a new password',
                 arg='update %s %s %s %s ' % (k.path, c.domain, c.username, query[2]),
+                icon=icon_path('edit'),
                 valid=True
             ))
             items.append(I(
                 title='Delete account %s:%s in %s' % (c.username, c.domain, k.name),
                 subtitle='Remove this username and password',
                 arg='delete %s %s %s' % (k.path, c.domain, c.username),
+                icon=icon_path('trash'),
                 valid=True
             ))
             items.append(I(
                 title='Quicklook a QR code password for %s:%s from %s' % (c.username, c.domain, k.name),
                 subtitle='Display QR code',
                 arg='qr %s %s %s %s ' % (k.path, c.domain, c.username, query[2]),
+                icon=icon_path('qrcode'),
                 valid=True
             ))
     if exact_k is None:
@@ -189,6 +212,7 @@ def query_three(query):
             title='Create new keyfile: %s' % query[0],
             subtitle='Save database here: %s' % query[2],
             arg='create %s %s %s' % (query[0], query[1], query[2]),
+            icon=icon_path('plus'),
             valid=True
         ))
     return items
@@ -206,6 +230,7 @@ def query_four(query):
             title='Update account %s:%s in %s' % (query[1], query[0], k.name),
             subtitle='Set password to %s' % query[3],
             arg='update %s %s %s %s %s' % (k.path, query[0], query[1], query[2], query[3]),
+            icon=icon_path('edit'),
             valid=True
         ))
         try:
@@ -214,6 +239,7 @@ def query_four(query):
                 title='Update account %s:%s in %s' % (query[1], query[0], k.name),
                 subtitle='Randomly generate a %d character password' % length,
                 arg='update %s %s %s %s p %s' % (k.path, query[0], query[1], query[2], query[3]),
+                icon=icon_path('edit'),
                 valid=True
             ))
         except:
@@ -221,6 +247,7 @@ def query_four(query):
                 title='Update account %s:%s in %s' % (query[1], query[0], k.name),
                 subtitle='Randomly generate a password containing only characters from %s' % query[3],
                 arg='update %s %s %s %s p %d %s' % (k.path, query[0], query[1], query[2], k.length, query[3]),
+                icon=icon_path('edit'),
                 valid=True
             ))
     if not exact_c:
@@ -231,6 +258,7 @@ def query_four(query):
                     title='Save new account %s:%s in %s' % (query[1], query[0], k.name),
                     subtitle='Randomly generate a %d character password' % length,
                     arg='add %s %s %s %s p %s' % (k.path, query[0], query[1], query[2], query[3]),
+                    icon=icon_path('plus'),
                     valid=True
                 ))
             except:
@@ -238,6 +266,7 @@ def query_four(query):
                     title='Save new account %s:%s in %s' % (query[1], query[0], k.name),
                     subtitle='Randomly generate a password containing only characters from %s' % query[3],
                     arg='add %s %s %s %s p %d %s' % (k.path, query[0], query[1], query[2], k.length, query[3]),
+                    icon=icon_path('plus'),
                     valid=True
                 ))
     for k in match_c:
@@ -246,6 +275,7 @@ def query_four(query):
                 title='Update account %s:%s in %s' % (c.username, c.domain, k.name),
                 subtitle='Set password to %s' % query[3],
                 arg='update %s %s %s %s %s' % (k.path, c.domain, c.username, query[2], query[3]),
+                icon=icon_path('edit'),
                 valid=True
             ))
             try:
@@ -254,6 +284,7 @@ def query_four(query):
                     title='Update account %s:%s in %s' % (c.username, c.domain, k.name),
                     subtitle='Randomly generate a %d character password' % length,
                     arg='update %s %s %s %s p %s' % (k.path, c.domain, c.username, query[2], query[3]),
+                    icon=icon_path('edit'),
                     valid=True
                 ))
             except:
@@ -261,6 +292,7 @@ def query_four(query):
                     title='Update account %s:%s in %s' % (c.username, c.domain, k.name),
                     subtitle='Randomly generate a password containing only characters from %s' % query[3],
                     arg='update %s %s %s %s p %d %s' % (k.path, c.domain, c.username, query[2], k.length, query[3]),
+                    icon=icon_path('edit'),
                     valid=True
                 ))
     if exact_k is None:
@@ -270,6 +302,7 @@ def query_four(query):
                 title='Create new keyfile: %s' % query[0],
                 subtitle='Passwords in this database should be %d characters long' % length,
                 arg='create %s %s %s %s %s' % (k.path, query[0], query[1], query[2], query[3]),
+                icon=icon_path('plus'),
                 valid=True
             ))
         except:
@@ -277,6 +310,7 @@ def query_four(query):
                 title='Create new keyfile: %s' % query[0],
                 subtitle='Passwords in this database should only contain characters in %s' % query[3],
                 arg='create %s %s %s %s %d %s' % (k.path, query[0], query[1], query[2], Keyfile.LENGTH, query[3]),
+                icon=icon_path('plus'),
                 valid=True
             ))
     return items
@@ -303,6 +337,7 @@ def query_five(query):
             title='Update account %s:%s in %s' % (query[1], query[0], k.name),
             subtitle='Randomly generate a %d character password containing only characters from %s' % (length, characters),
             arg='update %s %s %s %s p %d %s' % (k.path, query[0], query[1], query[2], length, characters),
+            icon=icon_path('edit'),
             valid=True
         ))
     if not exact_c:
@@ -311,6 +346,7 @@ def query_five(query):
                 title='Save new account %s:%s in %s' % (query[1], query[0], k.name),
                 subtitle='Randomly generate a password a %d character password containing only characters from %s' % (length, characters),
                 arg='add %s %s %s %s p %d %s' % (k.path, query[0], query[1], query[2], length, characters),
+                icon=icon_path('plus'),
                 valid=True
             ))
     for k in match_c:
@@ -319,6 +355,7 @@ def query_five(query):
                 title='Update account %s:%s in %s' % (c.username, c.domain, k.name),
                 subtitle='Randomly generate a password a %d character password containing only characters from %s' % (length, characters),
                 arg='update %s %s %s %s p %d %s' % (k.path, c.domain, c.username, query[2], length, characters),
+                icon=icon_path('edit'),
                 valid=True
             ))
     if exact_k is None:
@@ -326,6 +363,7 @@ def query_five(query):
             title='Create new keyfile: %s' % query[0],
             subtitle='Passwords in this database should be %d characters long and only contain characters in %s' % (length, characters),
             arg='create %s %s %s %s %d %s' % (k.path, query[0], query[1], query[2], length, characters),
+            icon=icon_path('plus'),
             valid=True
         ))
     return items
