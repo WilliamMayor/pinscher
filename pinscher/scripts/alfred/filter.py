@@ -15,9 +15,9 @@ def find_credentials(keyfiles, query):
     for k in keyfiles:
         with Database(k) as d:
             if len(query) == 1:
-                matches[k] = d.find(domain=query[0]) + d.find(username=query[0])
+                matches[k] = list(set(d.find(domain=query[0]) + d.find(username=query[0])))
             else:
-                for c in d.find(domain=query[0], username=query[1]) + d.find(domain=query[1], username=query[0]):
+                for c in set(d.find(domain=query[0], username=query[1]) + d.find(domain=query[1], username=query[0])):
                     if c.domain == query[0] and c.username == query[1]:
                         exact[k] = c
                     else:
@@ -95,6 +95,15 @@ def query_two(query):
     keyfiles = load_keyfiles()
     exact_c, match_c = find_credentials(keyfiles, query)
     exact_k, match_k = find_keyfiles(keyfiles, query)
+    for k in exact_c:
+        c = exact_c[k]
+        items.append(I(
+            title='%s:%s' % (c.username, c.domain),
+            subtitle='Use this account (need PIN)',
+            autocomplete='%s %s ' % (c.domain, c.username),
+            icon=icon_path('lock'),
+            valid=False
+        ))
     for k in match_c:
         for c in match_c[k]:
             items.append(I(
@@ -110,15 +119,6 @@ def query_two(query):
             subtitle='Create new account (need PIN)',
             autocomplete='%s %s ' % (query[0], query[1]),
             icon=icon_path('plus'),
-            valid=False
-        ))
-    for k in exact_c:
-        c = exact_c[k]
-        items.append(I(
-            title='%s:%s' % (c.username, c.domain),
-            subtitle='Use this account (need PIN)',
-            autocomplete='%s %s ' % (c.domain, c.username),
-            icon=icon_path('lock'),
             valid=False
         ))
     if exact_k is None:
@@ -252,6 +252,13 @@ def query_four(query):
             ))
     if not exact_c:
         for k in keyfiles:
+            items.append(I(
+                title='Save new account %s:%s in %s' % (query[1], query[0], k.name),
+                subtitle='Set password to %s' % query[3],
+                arg='add %s %s %s %s %s' % (k.path, query[0], query[1], query[2], query[3]),
+                icon=icon_path('plus'),
+                valid=True
+            ))
             try:
                 length = int(query[3])
                 items.append(I(

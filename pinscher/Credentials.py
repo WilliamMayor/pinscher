@@ -25,10 +25,10 @@ class Credentials:
         return self.cipherpassword, self.iv
 
     def __eq__(self, other):
-        equal = True
-        if self.iv is not None and other.iv is not None:
-            equal = equal and (self.iv == other.iv)
-        return equal and (self.domain == other.domain) and (self.username == other.username)
+        return self.domain, self.username == other.domain, other.username
+
+    def __hash__(self):
+        return hash((self.domain, self.username))
 
     def __repr__(self):
         print self.__dict__
