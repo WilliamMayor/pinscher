@@ -1,19 +1,26 @@
 import sqlite3
 import os
 
-import utilities
-from .Credentials import Credentials
+import pinscher.utilities as utilities
+from pinscher.Secret import Secret
 
 SCHEMA = """BEGIN TRANSACTION;
-CREATE TABLE Credentials(
-    domain TEXT,
-    username TEXT,
-    password TEXT,
-    iv TEXT,
-    PRIMARY KEY (domain, username)
+CREATE TABLE Secret(
+    id INTEGER PRIMARY KEY,
+    iv TEXT NOT NULL,
+    secret TEXT NOT NULL
 );
-CREATE INDEX credentials_domain_index ON Credentials(domain);
-CREATE INDEX credentials_username_index ON Credentials(username);
+CREATE TABLE Tag(
+    id INTEGER PRIMARY KEY,
+    tag TEXT UNIQUE NOT NULL
+);
+CREATE TABLE SecretTag(
+    secret INTEGER NOT NULL,
+    tag INTEGER NOT NULL,
+    FOREIGN KEY (secret) REFERENCES Secret(id),
+    FOREIGN KEY (tag) REFERENCES Tag(id)
+);
+CREATE INDEX index_Tag_tag ON Tag(tag);
 COMMIT;
 """
 
@@ -22,12 +29,12 @@ class Database:
 
     @staticmethod
     def create(keyfile):
-        connection = sqlite3.connect(':memory:')
-        connection.executescript(SCHEMA)
         if os.path.isfile(keyfile.database_path):
             raise IOError('Database file already exsits')
-        with open(keyfile.database_path, 'wb') as f:
-            f.write(
+        connection = sqlite3.connect(':memory:')
+        connection.executescript(SCHEMA)
+        with open(keyfile.database_path, 'wb') as fd:
+            fd.write(
                 utilities.encrypt(
                     keyfile.key,
                     keyfile.iv,
@@ -36,31 +43,32 @@ class Database:
     def __init__(self, keyfile):
         self.keyfile = keyfile
         self.connection = sqlite3.connect(':memory:')
-        with open(self.keyfile.database_path, 'rb') as f:
-            try:
-                self.connection.executescript(
-                    utilities.decrypt(
-                        self.keyfile.key,
-                        self.keyfile.iv, f.read()))
-            except sqlite3.OperationalError:
-                raise ValueError('Could not decrypt database')
+        try:
+            with open(self.keyfile.database_path, 'rb') as fd:
+                cipher = fd.read()
+            plain = utilities.decrypt(
+                self.keyfile.key,
+                self.keyfile.iv,
+                cipher)
+            self.connection.executescript(plain)
+        except IOError:
+            # TODO: This could led to losing the database
+            # If there is an IOError that isn't caused by
+            # the database file not existing
+            self.connection.executescript(SCHEMA)
+        except sqlite3.OperationalError:
+            raise ValueError('Could not decrypt database')
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
-
-    def close(self):
-        with open(self.keyfile.database_path, 'wb') as f:
-            f.write(
+    def save(self):
+        with open(self.keyfile.database_path, 'wb') as fd:
+            fd.write(
                 utilities.encrypt(
                     self.keyfile.key,
                     self.keyfile.iv,
                     '\n'.join(self.connection.iterdump())))
         self.connection.close()
 
-    def __execute__(self, query, args):
+    def _execute(self, query, args):
         cursor = self.connection.cursor()
         results = list(cursor.execute(query, args))
         cursor.close()
@@ -77,7 +85,7 @@ class Database:
             credentials.username,
             cipherpassword.encode('hex'),
             iv.encode('hex')]
-        self.__execute__(query, args)
+        self._execute(query, args)
 
     def update(self, credentials, pin):
         cipherpassword, iv = credentials.lock(pin)
@@ -91,7 +99,7 @@ class Database:
             iv.encode('hex'),
             credentials.domain,
             credentials.username]
-        self.__execute__(query, args)
+        self._execute(query, args)
 
     def find(self, domain='', username=''):
         query = ''.join([
@@ -102,7 +110,7 @@ class Database:
         args = [
             domain,
             username]
-        rows = self.__execute__(query, args)
+        rows = self._execute(query, args)
         results = map(
             lambda row: Credentials(
                 domain=row[0],
@@ -120,4 +128,4 @@ class Database:
         args = [
             credentials.domain,
             credentials.username]
-        self.__execute__(query, args)
+        self._execute(query, args)

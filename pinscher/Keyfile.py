@@ -1,6 +1,5 @@
 import string
 import pickle
-import os
 
 import utilities
 
@@ -9,42 +8,33 @@ class Keyfile:
 
     LENGTH = 32
     CHARACTERS = string.digits + string.letters + string.punctuation + ' '
+    FIELDS = {
+        'database_path': lambda: None,
+        'key': utilities.generate_key,
+        'iv': utilities.generate_iv,
+        'characters': lambda: Keyfile.CHARACTERS,
+        'length': lambda: Keyfile.LENGTH
+    }
 
-    @staticmethod
-    def create(path, database_path, **kwargs):
-        k = Keyfile()
-        k.path = path
-        k.database_path = os.path.abspath(database_path)
-        k.key = kwargs.get('key', utilities.generate_key())
-        k.iv = kwargs.get('iv', utilities.generate_iv())
-        k.length = kwargs.get('length', Keyfile.LENGTH)
-        k.characters = kwargs.get('characters', Keyfile.CHARACTERS)
-        k.save()
-        return Keyfile.load(path)
-
-    @staticmethod
-    def load(path):
-        k = pickle.load(open(path, 'rb'))
-        k.path = path
-        return k
-
-    def __getstate__(self):
-        _dict = self.__dict__.copy()
-        del _dict['path']
-        return _dict
-
-    def __setstate__(self, _dict):
-        self.__dict__.update(_dict)
-
-    def __hash__(self):
-        return self.path.__hash__()
-
-    def __eq__(self, other):
-        return self.path == other.path
+    def __init__(self, path, **kwargs):
+        self.path = path
+        try:
+            with open(self.path, 'rb') as fd:
+                d = pickle.load(fd)
+                self._pickled = d
+        except:
+            d = {}
+            self._pickled = None
+        for k, v in Keyfile.FIELDS.iteritems():
+            if k in kwargs:
+                self.__dict__[k] = kwargs[k]
+            elif k in d:
+                self.__dict__[k] = d[k]
+            else:
+                self.__dict__[k] = v()
 
     def save(self):
-        pickle.dump(self, open(self.path, 'wb'))
-
-    def delete(self):
-        os.remove(self.path)
-        os.remove(self.database_path)
+        d = {k: self.__dict__[k] for k in Keyfile.FIELDS}
+        if self._pickled != d:
+            with open(self.path, 'wb') as fd:
+                pickle.dump(d, fd)

@@ -23,10 +23,5 @@ def generate_iv():
     return Random.new().read(AES.block_size)
 
 
-def generate_password(keyfile, args):
-    characters = args.get('characters', keyfile.characters)
-    length = int(args.get('length', keyfile.length))
-    password = ''
-    while len(password) < length:
-        password += random.choice(characters)
-    return password
+def generate_password(characters, length):
+    return ''.join([random.choice(characters) for _ in xrange(length)])

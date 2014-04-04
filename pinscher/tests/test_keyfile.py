@@ -1,70 +1,51 @@
-import unittest
-import os
+import tempfile
 import pickle
 
-from tempdir import TempDir
+from nose.tools import assert_equals, assert_is_not_none
 
-from .utilities import raises, not_raises
-
-from pinscher.Keyfile import Keyfile as K
+from pinscher.Keyfile import Keyfile
 
 
-class TestCredentials(unittest.TestCase):
+def test_create_defaults():
+    kf = tempfile.NamedTemporaryFile('wb')
+    df = tempfile.NamedTemporaryFile('wb')
+    with Keyfile(kf.name, database_path=df.name) as k:
+        assert_equals(k['database_path'], df.name)
+        assert_equals(k['characters'], Keyfile.CHARACTERS)
+        assert_equals(k['length'], Keyfile.LENGTH)
+        assert_is_not_none(k['key'])
+        assert_is_not_none(k['iv'])
 
-    key = '0b660492d98c54412d3d91818de5a2ae0b3110850a12010768b80fb277f55aa6'.decode('hex')
-    iv = '9059d464b93397a2a98e8e1f00b596c6'.decode('hex')
-    length = 5
-    characters = 'abc'
 
-    def setUp(self):
-        self.d = TempDir()
-        self.keyfile_path = os.path.join(self.d.name, 'keyfile')
-        self.database_path = os.path.join(self.d.name, 'database')
+def test_create():
+    kf = tempfile.NamedTemporaryFile('wb')
+    df = tempfile.NamedTemporaryFile('wb')
+    with Keyfile(kf.name,
+                 database_path=df.name,
+                 key='key',
+                 iv='iv',
+                 characters='abc', length=5) as k:
+        assert_equals(k['database_path'], df.name)
+        assert_equals(k['characters'], 'abc')
+        assert_equals(k['length'], 5)
+        assert_equals(k['key'], 'key')
+        assert_equals(k['iv'], 'iv')
 
-    def tearDown(self):
-        self.d.dissolve()
 
-    @not_raises(AttributeError)
-    def test_create_keyfile_generate(self):
-        keyfile = K.create(
-            self.keyfile_path,
-            self.database_path)
-        keyfile.key
-        keyfile.iv
-        keyfile.length
-        keyfile.characters
+def test_pickled():
+    kf = tempfile.NamedTemporaryFile('wb')
+    df = tempfile.NamedTemporaryFile('wb')
+    with Keyfile(kf.name, database_path=df.name) as k:
+        orig = k
+    with open(kf.name, 'rb') as fd:
+        unpickled = pickle.load(fd)
+    assert_equals(orig, unpickled)
 
-    def test_create_keyfile_provided(self):
-        keyfile = K.create(
-            self.keyfile_path,
-            self.database_path,
-            key=self.key,
-            iv=self.iv,
-            length=self.length,
-            characters=self.characters)
-        self.assertEqual(keyfile.key, self.key)
-        self.assertEqual(keyfile.iv, self.iv)
-        self.assertEqual(keyfile.length, self.length)
-        self.assertEqual(keyfile.characters, self.characters)
 
-    @raises(AttributeError)
-    def test_save_no_path(self):
-        K.create(
-            self.keyfile_path,
-            self.database_path)
-        k = pickle.load(open(self.keyfile_path, 'rb'))
-        k.path
-
-    @not_raises(AttributeError)
-    def test_load_has_path(self):
-        K.create(
-            self.keyfile_path,
-            self.database_path)
-        k = K.load(self.keyfile_path)
-        k.path
-
-    @raises(IOError)
-    def test_save_keyfile_cant_write_keyfile(self):
-        K.create(
-            '/nopermission',
-            self.database_path)
+def test_changes_saved():
+    kf = tempfile.NamedTemporaryFile('wb')
+    df = tempfile.NamedTemporaryFile('wb')
+    with Keyfile(kf.name, database_path=df.name) as k:
+        k['key'] = 'other key'
+    with Keyfile(kf.name) as k:
+        assert_equals(k['key'], 'other key')
